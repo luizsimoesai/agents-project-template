@@ -2,12 +2,12 @@ import { useAuthStore } from "@/lib/store/auth"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:2024"
 
-let isRefreshing = false
 let refreshPromise: Promise<boolean> | null = null
 
 async function tryRefresh(): Promise<boolean> {
-  if (isRefreshing) return refreshPromise!
-  isRefreshing = true
+  // Deduplicate concurrent 401s: if a refresh is already in flight, wait for it
+  if (refreshPromise) return refreshPromise
+
   refreshPromise = (async () => {
     const refreshToken = localStorage.getItem("refresh_token")
     if (!refreshToken) return false
@@ -19,18 +19,26 @@ async function tryRefresh(): Promise<boolean> {
       })
       if (!res.ok) return false
       const data = await res.json()
-      const { user } = useAuthStore.getState()
-      useAuthStore.getState().setAuth(data.access_token, user!)
+      // Fetch current user separately to avoid using potentially null user from store
+      const meRes = await fetch(`${API_URL}/api/v1/auth/me`, {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      })
+      if (!meRes.ok) return false
+      const user = await meRes.json()
+      useAuthStore.getState().setAuth(data.access_token, user)
       localStorage.setItem("refresh_token", data.refresh_token)
       return true
     } catch {
       return false
-    } finally {
-      isRefreshing = false
-      refreshPromise = null
     }
   })()
-  return refreshPromise
+
+  try {
+    return await refreshPromise
+  } finally {
+    // Clear only after all awaiters have received the result
+    refreshPromise = null
+  }
 }
 
 export async function apiClient(
@@ -57,10 +65,14 @@ export async function apiClient(
       if (newToken) headers["Authorization"] = `Bearer ${newToken}`
       return fetch(`${API_URL}${path}`, { ...options, headers })
     }
+    // Refresh failed — clear auth and redirect
     useAuthStore.getState().clearAuth()
     if (typeof window !== "undefined") {
       window.location.href = "/login"
+      // Return the 401 response — callers should not process it, but
+      // we cannot throw here without breaking callers that use .then()
     }
+    return res
   }
 
   return res
