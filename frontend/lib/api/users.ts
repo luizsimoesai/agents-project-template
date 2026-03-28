@@ -1,9 +1,19 @@
 import { apiClient } from "./client"
 import type { UserRead, UserUpdate } from "@/lib/types"
 
+async function throwOnError(res: Response, fallback: string): Promise<never> {
+  try {
+    const err = await res.json()
+    const detail = typeof err.detail === "string" ? err.detail : fallback
+    throw new Error(detail)
+  } catch {
+    throw new Error(fallback)
+  }
+}
+
 export async function fetchCurrentUser(): Promise<UserRead> {
   const res = await apiClient("/api/v1/auth/me")
-  if (!res.ok) throw new Error("Erro ao buscar perfil")
+  if (!res.ok) return throwOnError(res, "Erro ao buscar perfil")
   return res.json()
 }
 
@@ -12,29 +22,29 @@ export async function updateUser(id: string, data: UserUpdate): Promise<UserRead
     method: "PATCH",
     body: JSON.stringify(data),
   })
-  if (!res.ok) throw new Error("Erro ao atualizar perfil")
+  if (!res.ok) return throwOnError(res, "Erro ao atualizar perfil")
   return res.json()
 }
 
 export async function fetchAllUsers(): Promise<UserRead[]> {
   const res = await apiClient("/api/v1/users")
-  if (!res.ok) throw new Error("Erro ao buscar usuários")
+  if (!res.ok) return throwOnError(res, "Erro ao buscar usuários")
   return res.json()
 }
 
 export async function activateUser(id: string): Promise<UserRead> {
   const res = await apiClient(`/api/v1/users/${id}/activate`, { method: "PATCH" })
-  if (!res.ok) throw new Error("Erro ao ativar usuário")
+  if (!res.ok) return throwOnError(res, "Erro ao ativar usuário")
   return res.json()
 }
 
 export async function deactivateUser(id: string): Promise<UserRead> {
   const res = await apiClient(`/api/v1/users/${id}/deactivate`, { method: "PATCH" })
-  if (!res.ok) throw new Error("Erro ao desativar usuário")
+  if (!res.ok) return throwOnError(res, "Erro ao desativar usuário")
   return res.json()
 }
 
 export async function deleteUser(id: string): Promise<void> {
   const res = await apiClient(`/api/v1/users/${id}`, { method: "DELETE" })
-  if (!res.ok) throw new Error("Erro ao apagar usuário")
+  if (!res.ok) return throwOnError(res, "Erro ao apagar usuário")
 }

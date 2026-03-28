@@ -4,7 +4,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:2024"
 
 let refreshPromise: Promise<boolean> | null = null
 
-async function tryRefresh(): Promise<boolean> {
+export async function tryRefresh(): Promise<boolean> {
   // Deduplicate concurrent 401s: if a refresh is already in flight, wait for it
   if (refreshPromise) return refreshPromise
 
