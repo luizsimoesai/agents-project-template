@@ -1,0 +1,96 @@
+<h2>Como deve ser o visual da tela de chat?</h2>
+<p class="subtitle">Estilo das mensagens na área principal de conversa.</p>
+
+<div class="cards">
+
+  <!-- Option A: Bolhas tradicionais -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;flex-direction:column;height:200px;background:var(--bg-secondary);border-radius:6px;overflow:hidden;padding:12px;gap:8px;font-size:11px;">
+        <!-- AI message -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:#136ddd;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;">AI</div>
+          <div style="background:var(--border-color);border-radius:0 10px 10px 10px;padding:8px 10px;max-width:70%;color:var(--text-primary);line-height:1.4;">
+            Olá! Como posso ajudar você hoje?
+          </div>
+        </div>
+        <!-- User message -->
+        <div style="display:flex;gap:8px;align-items:flex-start;flex-direction:row-reverse;">
+          <div style="width:24px;height:24px;background:var(--border-color);border-radius:50%;flex-shrink:0;"></div>
+          <div style="background:#136ddd;border-radius:10px 0 10px 10px;padding:8px 10px;max-width:70%;color:white;line-height:1.4;">
+            Me ajude com uma tarefa complexa
+          </div>
+        </div>
+        <!-- AI streaming -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:#136ddd;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;">AI</div>
+          <div style="background:var(--border-color);border-radius:0 10px 10px 10px;padding:8px 10px;max-width:70%;color:var(--text-primary);line-height:1.4;">
+            Claro! Vou analisar... <span style="display:inline-block;width:6px;height:12px;background:#136ddd;border-radius:1px;animation:blink 1s infinite;vertical-align:middle;"></span>
+          </div>
+        </div>
+        <!-- Input -->
+        <div style="margin-top:auto;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:8px;padding:6px 10px;color:var(--text-secondary);font-size:10px;opacity:.6;">Digite uma mensagem...</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Bolhas com avatar</h3>
+      <p>Estilo familiar (WhatsApp/ChatGPT). Azul para o usuário, neutro para a IA. Cursor piscando durante streaming.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Linhas sem bolhas (terminal-ish) -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;flex-direction:column;height:200px;background:var(--bg-secondary);border-radius:6px;overflow:hidden;padding:14px;gap:10px;font-family:monospace;font-size:10px;">
+        <div style="display:flex;gap:8px;">
+          <span style="color:#136ddd;font-weight:700;flex-shrink:0;">assistant</span>
+          <span style="color:var(--text-primary);line-height:1.5;">Olá! Como posso ajudar você hoje?</span>
+        </div>
+        <div style="height:1px;background:var(--border-color);opacity:.3;"></div>
+        <div style="display:flex;gap:8px;">
+          <span style="color:var(--text-secondary);font-weight:700;flex-shrink:0;">você</span>
+          <span style="color:var(--text-primary);line-height:1.5;">Me ajude com uma tarefa complexa</span>
+        </div>
+        <div style="height:1px;background:var(--border-color);opacity:.3;"></div>
+        <div style="display:flex;gap:8px;">
+          <span style="color:#136ddd;font-weight:700;flex-shrink:0;">assistant</span>
+          <span style="color:var(--text-primary);line-height:1.5;">Claro! Vou analisar... <span style="display:inline-block;width:5px;height:11px;background:#136ddd;border-radius:1px;vertical-align:middle;"></span></span>
+        </div>
+        <div style="margin-top:auto;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;padding:5px 8px;color:var(--text-secondary);font-size:10px;opacity:.6;">&gt; Digite uma mensagem...</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Linear estilo terminal</h3>
+      <p>Sem bolhas — cada mensagem em linha com label role. Fonte mono, aspecto técnico minimalista. Combina com a estética pedida.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Híbrido - sem bolhas mas com separação visual -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;flex-direction:column;height:200px;background:var(--bg-secondary);border-radius:6px;overflow:hidden;padding:12px;gap:0;font-size:11px;">
+        <!-- AI message block -->
+        <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#136ddd;font-weight:600;margin-bottom:4px;font-family:monospace;">assistant</div>
+          <div style="color:var(--text-primary);line-height:1.5;">Olá! Como posso ajudar você hoje?</div>
+        </div>
+        <!-- User message block -->
+        <div style="padding:10px 0;border-bottom:1px solid var(--border-color);background:var(--bg-primary);margin:0 -12px;padding-left:12px;padding-right:12px;">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);font-weight:600;margin-bottom:4px;font-family:monospace;">você</div>
+          <div style="color:var(--text-primary);line-height:1.5;">Me ajude com uma tarefa complexa</div>
+        </div>
+        <!-- AI message block streaming -->
+        <div style="padding:10px 0;">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#136ddd;font-weight:600;margin-bottom:4px;font-family:monospace;">assistant</div>
+          <div style="color:var(--text-primary);line-height:1.5;">Claro! Vou analisar... <span style="display:inline-block;width:5px;height:11px;background:#136ddd;border-radius:1px;vertical-align:middle;"></span></div>
+        </div>
+        <div style="margin-top:auto;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;padding:6px 10px;color:var(--text-secondary);font-size:10px;opacity:.6;">Digite uma mensagem...</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Blocos alternados</h3>
+      <p>Sem bolhas, mensagens em blocos full-width. Fundo alternado entre user/assistant. Label mono acima de cada bloco. Inspirado no Claude.ai.</p>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,52 @@
+# Docker Compose - PostgreSQL + API
+# aegra dev  -> docker compose up postgres -d  (database only)
+# aegra up   -> docker compose up --build      (full stack)
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    container_name: backend-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-backend}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-backend_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-backend}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-backend}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: backend-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-2026}:${PORT:-2026}"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-backend}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-backend_secret}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-backend}
+      - AEGRA_CONFIG=aegra.json
+      - AUTH_TYPE=${AUTH_TYPE:-noop}
+      - PORT=${PORT:-2026}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${PORT:-2026}/health || exit 1"]
+      interval: 30s
+      start_period: 10s
+    volumes:
+      - ./src:/app/src:ro
+      - ./aegra.json:/app/aegra.json:ro
+
+volumes:
+  postgres_data:

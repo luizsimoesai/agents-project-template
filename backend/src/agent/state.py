@@ -1,0 +1,26 @@
+"""State definitions for backend."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Annotated, Sequence
+
+from langchain_core.messages import AnyMessage
+from langgraph.graph import add_messages
+from langgraph.managed import IsLastStep
+
+
+@dataclass
+class InputState:
+    """Input schema — only the fields the caller may provide."""
+
+    messages: Annotated[Sequence[AnyMessage], add_messages] = field(
+        default_factory=list
+    )
+
+
+@dataclass
+class State(InputState):
+    """Internal state — extends InputState with runtime-managed fields."""
+
+    is_last_step: IsLastStep = field(default=False)

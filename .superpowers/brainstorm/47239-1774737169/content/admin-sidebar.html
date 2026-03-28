@@ -1,0 +1,114 @@
+<h2>Acesso admin na sidebar</h2>
+<p class="subtitle">Como o ícone admin aparece para usuários com is_admin=true</p>
+
+<div class="split">
+
+  <!-- Usuário comum -->
+  <div class="mockup">
+    <div class="mockup-header">Usuário comum (is_admin=false)</div>
+    <div class="mockup-body" style="padding:0;">
+      <div style="display:flex;height:320px;">
+        <!-- Icon bar -->
+        <div style="width:52px;background:var(--bg-secondary);border-right:1px solid var(--border-color);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;">
+          <!-- Logo -->
+          <div style="width:28px;height:28px;background:#136ddd;border-radius:6px;margin-bottom:12px;"></div>
+          <!-- Assistants (active) -->
+          <div style="width:36px;height:36px;background:#136ddd22;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Assistentes">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#136ddd" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h4"/></svg>
+          </div>
+          <!-- Profile -->
+          <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Perfil">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <!-- Theme -->
+          <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </div>
+          <!-- Spacer + Logout at bottom -->
+          <div style="flex:1;"></div>
+          <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Sair">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+        </div>
+        <!-- Context panel -->
+        <div style="flex:1;background:var(--bg-primary);padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:4px;">Assistentes</div>
+          <div style="background:var(--border-color);border-radius:4px;height:28px;opacity:.7;"></div>
+          <div style="background:var(--border-color);border-radius:4px;height:28px;opacity:.5;"></div>
+          <div style="background:var(--border-color);border-radius:4px;height:28px;opacity:.3;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="mockup">
+    <div class="mockup-header">Administrador (is_admin=true)</div>
+    <div class="mockup-body" style="padding:0;">
+      <div style="display:flex;height:320px;">
+        <!-- Icon bar -->
+        <div style="width:52px;background:var(--bg-secondary);border-right:1px solid var(--border-color);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;">
+          <!-- Logo -->
+          <div style="width:28px;height:28px;background:#136ddd;border-radius:6px;margin-bottom:12px;"></div>
+          <!-- Assistants (active) -->
+          <div style="width:36px;height:36px;background:#136ddd22;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Assistentes">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#136ddd" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h4"/></svg>
+          </div>
+          <!-- Profile -->
+          <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Perfil">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <!-- Theme -->
+          <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Tema">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </div>
+          <!-- Admin icon — visible only for admins -->
+          <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;" title="Admin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <!-- Badge indicator -->
+            <div style="position:absolute;top:6px;right:6px;width:6px;height:6px;background:#136ddd;border-radius:50%;"></div>
+          </div>
+          <!-- Spacer + Logout at bottom -->
+          <div style="flex:1;"></div>
+          <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;" title="Sair">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+        </div>
+        <!-- Context panel (admin view) -->
+        <div style="flex:1;background:var(--bg-primary);padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#136ddd;margin-bottom:4px;font-family:monospace;">Admin / Usuários</div>
+          <!-- Search bar -->
+          <div style="border:1px solid var(--border-color);border-radius:4px;height:24px;padding:0 8px;display:flex;align-items:center;gap:4px;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <div style="font-size:9px;color:var(--text-secondary);opacity:.5;">Buscar por nome...</div>
+          </div>
+          <!-- User rows -->
+          <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-color);">
+            <div style="width:18px;height:18px;background:var(--border-color);border-radius:50%;"></div>
+            <div style="flex:1;">
+              <div style="height:6px;background:var(--border-color);border-radius:3px;width:70%;margin-bottom:3px;"></div>
+              <div style="height:5px;background:var(--border-color);border-radius:3px;width:50%;opacity:.5;"></div>
+            </div>
+            <div style="font-size:8px;color:#22c55e;font-family:monospace;">ativo</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-color);">
+            <div style="width:18px;height:18px;background:var(--border-color);border-radius:50%;"></div>
+            <div style="flex:1;">
+              <div style="height:6px;background:var(--border-color);border-radius:3px;width:60%;margin-bottom:3px;"></div>
+              <div style="height:5px;background:var(--border-color);border-radius:3px;width:40%;opacity:.5;"></div>
+            </div>
+            <div style="font-size:8px;color:var(--text-secondary);opacity:.5;font-family:monospace;">inativo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-color);">
+  <p style="font-size:12px;color:var(--text-secondary);margin:0;line-height:1.6;">
+    <strong style="color:var(--text-primary);">Comportamento:</strong> o ícone admin (estrela) aparece na sidebar somente quando <code style="font-family:monospace;font-size:11px;color:#136ddd;">user.is_admin === true</code>.
+    Ao clicar, o painel contextual exibe a lista de usuários com busca, filtro de status e ação de deletar — sem abrir nova página, tudo na mesma estrutura de sidebar dupla.
+  </p>
+</div>

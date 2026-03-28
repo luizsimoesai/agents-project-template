@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "dependencies": [
+    "./src"
+  ],
+  "graphs": {
+    "agent": "./src/agent/graph.py:graph"
+  },
+  "http": {
+    "app": "./src/main.py:app",
+    "cors": {
+      "allow_origins": ["http://localhost:3000"],
+      "allow_credentials": true,
+      "allow_methods": ["*"],
+      "allow_headers": ["*"]
+    }
+  },
+  "auth": {
+    "path": "./src/auth/jwt.py:auth",
+    "disable_studio_auth": true
+  }
+}
