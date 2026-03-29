@@ -2,13 +2,14 @@ import { apiClient } from "./client"
 import type { UserRead, UserUpdate } from "@/lib/types"
 
 async function throwOnError(res: Response, fallback: string): Promise<never> {
+  let detail = fallback
   try {
     const err = await res.json()
-    const detail = typeof err.detail === "string" ? err.detail : fallback
-    throw new Error(detail)
+    if (typeof err.detail === "string") detail = err.detail
   } catch {
-    throw new Error(fallback)
+    // non-JSON body, use fallback
   }
+  throw new Error(detail)
 }
 
 export async function fetchCurrentUser(): Promise<UserRead> {
