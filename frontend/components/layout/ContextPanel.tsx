@@ -34,9 +34,13 @@ function AssistantsPanel() {
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation()
-    await deleteAssistant.mutateAsync(id)
-    toast.success("Assistente apagado")
-    if (activeId === id) router.push("/assistants")
+    try {
+      await deleteAssistant.mutateAsync(id)
+      toast.success("Assistente apagado")
+      if (activeId === id) router.push("/assistants")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao apagar assistente")
+    }
   }
 
   return (
@@ -101,9 +105,13 @@ function ThreadsPanel({
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation()
-    await deleteThread.mutateAsync(id)
-    toast.success("Conversa apagada")
-    if (activeThreadId === id) router.push(`/assistants/${assistantId}/threads`)
+    try {
+      await deleteThread.mutateAsync(id)
+      toast.success("Conversa apagada")
+      if (activeThreadId === id) router.push(`/assistants/${assistantId}/threads`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao apagar conversa")
+    }
   }
 
   return (

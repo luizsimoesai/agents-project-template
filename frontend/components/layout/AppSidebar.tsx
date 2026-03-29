@@ -24,7 +24,6 @@ const BRAND = "#136ddd"
 interface NavIconProps {
   icon: React.ReactNode
   label: string
-  href: string
   active: boolean
   onClick?: () => void
 }
@@ -33,18 +32,16 @@ function NavIcon({ icon, label, active, onClick }: NavIconProps) {
   return (
     <TooltipProvider delay={300}>
       <Tooltip>
-        <TooltipTrigger>
-          <button
-            onClick={onClick}
-            className={cn(
-              "w-9 h-9 flex items-center justify-center rounded-md transition-colors",
-              active
-                ? "bg-[#136ddd]/10 text-[#136ddd]"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            )}
-          >
-            {icon}
-          </button>
+        <TooltipTrigger
+          onClick={onClick}
+          className={cn(
+            "w-9 h-9 flex items-center justify-center rounded-md transition-colors cursor-pointer",
+            active
+              ? "bg-[#136ddd]/10 text-[#136ddd]"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground"
+          )}
+        >
+          {icon}
         </TooltipTrigger>
         <TooltipContent side="right">{label}</TooltipContent>
       </Tooltip>
@@ -78,7 +75,6 @@ export function AppSidebar() {
       <NavIcon
         icon={<LayoutList size={16} />}
         label="Assistentes"
-        href="/assistants"
         active={isActive("/assistants")}
         onClick={() => router.push("/assistants")}
       />
@@ -86,7 +82,6 @@ export function AppSidebar() {
       <NavIcon
         icon={<User size={16} />}
         label="Perfil"
-        href="/profile"
         active={isActive("/profile")}
         onClick={() => router.push("/profile")}
       />
@@ -94,7 +89,6 @@ export function AppSidebar() {
       <NavIcon
         icon={theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         label="Alternar tema"
-        href="#"
         active={false}
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       />
@@ -103,7 +97,6 @@ export function AppSidebar() {
         <NavIcon
           icon={<ShieldCheck size={16} />}
           label="Admin"
-          href="/admin"
           active={isActive("/admin")}
           onClick={() => router.push("/admin")}
         />
@@ -114,7 +107,6 @@ export function AppSidebar() {
       <NavIcon
         icon={<LogOut size={16} />}
         label="Sair"
-        href="#"
         active={false}
         onClick={handleLogout}
       />
