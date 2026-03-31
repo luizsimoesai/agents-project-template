@@ -21,10 +21,10 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-8 max-w-6xl w-full">
       <div className="flex items-center gap-2 mb-6">
-        <ShieldCheck size={20} style={{ color: "#136ddd" }} />
-        <h1 className="text-xl font-mono font-semibold" style={{ color: "#136ddd" }}>
+        <ShieldCheck size={20} style={{ color: "#2a9d8f" }} />
+        <h1 className="text-xl font-mono font-semibold" style={{ color: "#2a9d8f" }}>
           admin / users
         </h1>
       </div>

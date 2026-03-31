@@ -34,7 +34,7 @@ export function ChatInput({ onSubmit, onStop, isStreaming, disabled }: ChatInput
 
   return (
     <div className="border-t border-border/60 px-4 py-3">
-      <div className="relative flex items-end gap-2 bg-card border border-border rounded-xl px-3 py-2 shadow-sm focus-within:border-[#136ddd]/50 focus-within:ring-2 focus-within:ring-[#136ddd]/10 transition-all">
+      <div className="relative flex items-end gap-2 bg-card border border-border rounded-xl px-3 py-2 shadow-sm focus-within:border-[#2a9d8f]/50 focus-within:ring-2 focus-within:ring-[#2a9d8f]/10 transition-all">
         <Textarea
           ref={ref}
           value={value}
@@ -63,7 +63,7 @@ export function ChatInput({ onSubmit, onStop, isStreaming, disabled }: ChatInput
             disabled={!value.trim() || disabled}
             size="icon"
             className="h-8 w-8 shrink-0 rounded-lg"
-            style={{ backgroundColor: value.trim() ? "#136ddd" : undefined }}
+            style={{ backgroundColor: value.trim() ? "#2a9d8f" : undefined }}
           >
             <ArrowUp size={14} />
           </Button>

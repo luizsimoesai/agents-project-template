@@ -15,13 +15,13 @@ export function ChatMessage({ role, content, isStreaming = false }: ChatMessageP
         <div
           className={cn(
             "w-1.5 h-1.5 rounded-full shrink-0",
-            isAI ? "bg-[#136ddd]" : "bg-muted-foreground/50"
+            isAI ? "bg-[#2a9d8f]" : "bg-muted-foreground/50"
           )}
         />
         <span
           className={cn(
             "font-mono text-[10px] uppercase tracking-[0.18em] font-medium",
-            isAI ? "text-[#136ddd]" : "text-muted-foreground"
+            isAI ? "text-[#2a9d8f]" : "text-muted-foreground"
           )}
         >
           {isAI ? "assistant" : "you"}
@@ -37,7 +37,7 @@ export function ChatMessage({ role, content, isStreaming = false }: ChatMessageP
         {isStreaming && (
           <span
             data-testid="streaming-cursor"
-            className="inline-block w-0.5 h-3.75 bg-[#136ddd] ml-0.5 align-middle"
+            className="inline-block w-0.5 h-3.75 bg-[#2a9d8f] ml-0.5 align-middle"
             style={{ animation: "blink 1s steps(1) infinite" }}
           />
         )}

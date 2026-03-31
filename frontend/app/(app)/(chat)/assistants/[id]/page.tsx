@@ -21,7 +21,7 @@ export default function AssistantDetailPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-3">
-        <h2 className="text-xl font-mono font-semibold" style={{ color: "#136ddd" }}>
+        <h2 className="text-xl font-mono font-semibold" style={{ color: "#2a9d8f" }}>
           {assistant.name}
         </h2>
         <Button variant="ghost" size="icon" onClick={() => setEditOpen(true)}>

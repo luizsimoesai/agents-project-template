@@ -1,0 +1,11 @@
+{"type":"server-started","port":52300,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:52300","screen_dir":"/Users/luizsimoes/projetos/agents-project-template/.superpowers/brainstorm/main-session/content","state_dir":"/Users/luizsimoes/projetos/agents-project-template/.superpowers/brainstorm/main-session/state"}
+{"type":"screen-added","file":"/Users/luizsimoes/projetos/agents-project-template/.superpowers/brainstorm/main-session/content/assistant-picker-layout.html"}
+{"source":"user-event","type":"click","text":"SEUS ASSISTENTES\n      \n        \n          \n          Suporte\n          Atende clientes...\n          \n            \n            \n          \n        \n        \n          \n          Vendas\n          Qualifica leads...\n          \n            \n            \n          \n        \n        \n          +\n          Novo\n        \n      \n    \n    \n      A — Grid 3 colunas\n      Cards compactos em grade. Mais assistentes visíveis de uma vez. Editar/excluir via ícones no card.","choice":"A","id":null,"timestamp":1774959254372}
+{"type":"screen-added","file":"/Users/luizsimoes/projetos/agents-project-template/.superpowers/brainstorm/main-session/content/assistant-picker-v2.html"}
+{"source":"user-event","type":"click","text":"✓\n    \n      Ficou bom, pode avançar\n      Layout aprovado","choice":"ok","id":null,"timestamp":1774959556167}
+{"type":"screen-added","file":"/Users/luizsimoes/projetos/agents-project-template/.superpowers/brainstorm/main-session/content/chat-sidebar.html"}
+{"source":"user-event","type":"click","text":"~\n    \n      Adjust something\n      Describe in the terminal what to change","choice":"adjust","id":null,"timestamp":1774959705576}
+{"type":"screen-added","file":"/Users/luizsimoes/projetos/agents-project-template/.superpowers/brainstorm/main-session/content/chat-sidebar-dual.html"}
+{"source":"user-event","type":"click","text":"✓\n    \n      Looks good, move on\n      Layout approved","choice":"ok","id":null,"timestamp":1774959822152}
+{"type":"screen-added","file":"/Users/luizsimoes/projetos/agents-project-template/.superpowers/brainstorm/main-session/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

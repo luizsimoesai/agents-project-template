@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-bricolage);
-  --font-mono: var(--font-jetbrains-mono);
-  --font-heading: var(--font-bricolage);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-inter);
+  --font-heading: var(--font-inter);
   --color-brand: var(--brand);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -49,74 +49,126 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ============================================================
+   SUNNY BEACH DAY — Vintage Palette
+   Charcoal Blue  #264653
+   Verdigris      #2a9d8f
+   Jasmine        #e9c46a
+   Sandy Brown    #f4a261
+   Burnt Peach    #e76f51
+   ============================================================ */
+
 :root {
-  --brand: #136ddd;
-  --background: oklch(0.97 0.004 250);
-  --foreground: oklch(0.12 0.01 255);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.01 255);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.01 255);
-  --primary: oklch(0.49 0.19 252);
-  --primary-foreground: oklch(0.98 0.002 250);
-  --secondary: oklch(0.93 0.006 250);
-  --secondary-foreground: oklch(0.2 0.01 255);
-  --muted: oklch(0.93 0.005 250);
-  --muted-foreground: oklch(0.5 0.012 255);
-  --accent: oklch(0.91 0.007 250);
-  --accent-foreground: oklch(0.2 0.01 255);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.87 0.007 250);
-  --input: oklch(0.87 0.007 250);
-  --ring: oklch(0.49 0.19 252 / 30%);
-  --chart-1: oklch(0.72 0.14 252);
-  --chart-2: oklch(0.58 0.12 252);
-  --chart-3: oklch(0.45 0.09 252);
-  --chart-4: oklch(0.35 0.07 252);
-  --chart-5: oklch(0.25 0.05 252);
+  /* Brand: Verdigris */
+  --brand: #2a9d8f;
+
+  /* Backgrounds: warm sand tint */
+  --background: oklch(0.96 0.018 85);      /* off-white warm sand */
+  --foreground: oklch(0.20 0.030 220);     /* Charcoal Blue-ish dark */
+
+  /* Cards */
+  --card: oklch(0.99 0.008 85);
+  --card-foreground: oklch(0.20 0.030 220);
+
+  /* Popovers */
+  --popover: oklch(0.99 0.008 85);
+  --popover-foreground: oklch(0.20 0.030 220);
+
+  /* Primary: Verdigris */
+  --primary: oklch(0.58 0.098 185);        /* #2a9d8f */
+  --primary-foreground: oklch(0.98 0.005 85);
+
+  /* Secondary: Jasmine golden */
+  --secondary: oklch(0.88 0.072 80);       /* warm jasmine tint */
+  --secondary-foreground: oklch(0.22 0.030 220);
+
+  /* Muted: light sandy */
+  --muted: oklch(0.91 0.022 80);
+  --muted-foreground: oklch(0.48 0.028 200);
+
+  /* Accent: Sandy Brown */
+  --accent: oklch(0.78 0.095 55);          /* #f4a261 softened */
+  --accent-foreground: oklch(0.18 0.030 220);
+
+  /* Destructive: Burnt Peach */
+  --destructive: oklch(0.62 0.148 35);     /* #e76f51 */
+
+  /* Borders & inputs */
+  --border: oklch(0.82 0.030 75);
+  --input: oklch(0.82 0.030 75);
+
+  /* Ring: Verdigris glow */
+  --ring: oklch(0.58 0.098 185 / 35%);
+
+  /* Charts: full palette spectrum */
+  --chart-1: oklch(0.58 0.098 185);        /* Verdigris */
+  --chart-2: oklch(0.78 0.115 75);         /* Jasmine */
+  --chart-3: oklch(0.72 0.118 50);         /* Sandy Brown */
+  --chart-4: oklch(0.62 0.148 35);         /* Burnt Peach */
+  --chart-5: oklch(0.32 0.055 220);        /* Charcoal Blue */
+
   --radius: 0.5rem;
-  --sidebar: oklch(0.94 0.007 250);
-  --sidebar-foreground: oklch(0.12 0.01 255);
-  --sidebar-primary: oklch(0.49 0.19 252);
+
+  /* Sidebar: warm charcoal sand */
+  --sidebar: oklch(0.92 0.020 80);
+  --sidebar-foreground: oklch(0.20 0.030 220);
+  --sidebar-primary: oklch(0.58 0.098 185);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.88 0.009 250);
-  --sidebar-accent-foreground: oklch(0.2 0.01 255);
-  --sidebar-border: oklch(0.85 0.007 250);
-  --sidebar-ring: oklch(0.49 0.19 252 / 30%);
+  --sidebar-accent: oklch(0.86 0.030 78);
+  --sidebar-accent-foreground: oklch(0.22 0.030 220);
+  --sidebar-border: oklch(0.80 0.025 78);
+  --sidebar-ring: oklch(0.58 0.098 185 / 30%);
 }
 
 .dark {
-  --background: oklch(0.09 0.012 255);
-  --foreground: oklch(0.92 0.006 255);
-  --card: oklch(0.13 0.011 255);
-  --card-foreground: oklch(0.92 0.006 255);
-  --popover: oklch(0.14 0.011 255);
-  --popover-foreground: oklch(0.92 0.006 255);
-  --primary: oklch(0.62 0.18 252);
-  --primary-foreground: oklch(0.09 0.012 255);
-  --secondary: oklch(0.18 0.013 255);
-  --secondary-foreground: oklch(0.85 0.006 255);
-  --muted: oklch(0.16 0.011 255);
-  --muted-foreground: oklch(0.63 0.015 255);
-  --accent: oklch(0.18 0.013 255);
-  --accent-foreground: oklch(0.88 0.006 255);
-  --destructive: oklch(0.65 0.2 22);
-  --border: oklch(1 0 0 / 14%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.62 0.18 252 / 35%);
-  --chart-1: oklch(0.72 0.16 252);
-  --chart-2: oklch(0.6 0.14 252);
-  --chart-3: oklch(0.5 0.12 252);
-  --chart-4: oklch(0.4 0.1 252);
-  --chart-5: oklch(0.3 0.08 252);
-  --sidebar: oklch(0.11 0.012 255);
-  --sidebar-foreground: oklch(0.90 0.006 255);
-  --sidebar-primary: oklch(0.62 0.18 252);
-  --sidebar-primary-foreground: oklch(0.09 0.012 255);
-  --sidebar-accent: oklch(0.17 0.013 255);
-  --sidebar-accent-foreground: oklch(0.88 0.006 255);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.62 0.18 252 / 35%);
+  /* Deep ocean night — Charcoal Blue as base */
+  --background: oklch(0.14 0.028 220);     /* deep charcoal blue */
+  --foreground: oklch(0.92 0.018 75);      /* warm sandy cream */
+
+  --card: oklch(0.18 0.026 215);
+  --card-foreground: oklch(0.92 0.018 75);
+
+  --popover: oklch(0.19 0.026 215);
+  --popover-foreground: oklch(0.92 0.018 75);
+
+  /* Primary: brighter Verdigris for dark bg */
+  --primary: oklch(0.66 0.110 185);
+  --primary-foreground: oklch(0.12 0.028 220);
+
+  /* Secondary: muted charcoal */
+  --secondary: oklch(0.22 0.032 218);
+  --secondary-foreground: oklch(0.85 0.015 75);
+
+  /* Muted */
+  --muted: oklch(0.20 0.028 218);
+  --muted-foreground: oklch(0.60 0.025 185);
+
+  /* Accent: Sandy Brown warm on dark */
+  --accent: oklch(0.72 0.118 50);
+  --accent-foreground: oklch(0.12 0.028 220);
+
+  /* Destructive: Burnt Peach stays vivid */
+  --destructive: oklch(0.66 0.155 35);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.66 0.110 185 / 35%);
+
+  /* Charts: palette on dark */
+  --chart-1: oklch(0.66 0.110 185);        /* Verdigris */
+  --chart-2: oklch(0.80 0.118 78);         /* Jasmine */
+  --chart-3: oklch(0.74 0.125 52);         /* Sandy Brown */
+  --chart-4: oklch(0.66 0.155 35);         /* Burnt Peach */
+  --chart-5: oklch(0.55 0.065 220);        /* Charcoal Blue muted */
+
+  --sidebar: oklch(0.11 0.026 220);
+  --sidebar-foreground: oklch(0.90 0.015 75);
+  --sidebar-primary: oklch(0.66 0.110 185);
+  --sidebar-primary-foreground: oklch(0.12 0.028 220);
+  --sidebar-accent: oklch(0.19 0.028 218);
+  --sidebar-accent-foreground: oklch(0.88 0.015 75);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.66 0.110 185 / 35%);
 }
 
 @keyframes blink {
@@ -128,10 +180,13 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+    font-size: 17px;
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), system-ui, sans-serif;
   }
 }

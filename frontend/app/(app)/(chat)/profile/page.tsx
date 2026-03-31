@@ -40,7 +40,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-md space-y-4">
+      <div className="p-8 max-w-3xl space-y-4">
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
@@ -49,9 +49,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-8 max-w-md">
+    <div className="p-8 max-w-2xl w-full">
       <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-xl font-mono font-semibold" style={{ color: "#136ddd" }}>
+        <h1 className="text-xl font-mono font-semibold" style={{ color: "#2a9d8f" }}>
           profile
         </h1>
         {user?.is_admin && <Badge variant="outline" className="font-mono text-xs">admin</Badge>}

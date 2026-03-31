@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Bot, Pencil, Trash2, Plus } from "lucide-react"
+
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAssistants, useDeleteAssistant } from "@/lib/hooks/useAssistants"
 import { AssistantForm } from "@/components/assistants/AssistantForm"
@@ -18,11 +19,13 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import type { AssistantRead } from "@/lib/types"
+import { useAuthStore } from "@/lib/store/auth"
 
 export default function AssistantPickerPage() {
   const router = useRouter()
   const { data: assistants, isLoading } = useAssistants()
   const deleteAssistant = useDeleteAssistant()
+  const user = useAuthStore((s) => s.user)
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<AssistantRead | undefined>(undefined)
   const [deleteTarget, setDeleteTarget] = useState<AssistantRead | undefined>(undefined)
@@ -50,17 +53,11 @@ export default function AssistantPickerPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* App header */}
-      <header className="flex items-center gap-2.5 px-6 py-3 border-b border-border/60 shrink-0">
-        <div className="w-6 h-6 rounded-md bg-[#136ddd] flex items-center justify-center shrink-0">
-          <Bot size={13} className="text-white" />
-        </div>
-        <span className="text-sm font-semibold text-foreground">Agent Chat</span>
-      </header>
-
-      {/* Main content */}
       <main className="flex-1 p-8 max-w-5xl w-full mx-auto">
         <div className="mb-6">
+          {user?.name && (
+            <p className="text-sm text-muted-foreground mb-1">Hello, {user.name}</p>
+          )}
           <h1 className="text-xl font-bold text-foreground">Assistants</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Select an assistant to start a conversation
@@ -68,13 +65,13 @@ export default function AssistantPickerPage() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-lg" />
+              <Skeleton key={i} className="h-40 rounded-lg" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
             {assistants?.map((a) => (
               <div
                 key={a.assistant_id}
@@ -86,41 +83,41 @@ export default function AssistantPickerPage() {
                   e.key === "Enter" &&
                   router.push(`/assistants/${a.assistant_id}/threads`)
                 }
-                className="group relative bg-card border border-border/60 rounded-lg p-3 text-left cursor-pointer hover:border-[#136ddd]/50 hover:bg-[#136ddd]/5 transition-colors"
+                className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-[10rem]"
               >
                 {/* Edit / delete — appear on hover */}
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
                     aria-label="Edit assistant"
                     onClick={(e) => { e.stopPropagation(); openEdit(a) }}
-                    className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent"
+                    className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent"
                   >
-                    <Pencil size={11} />
+                    <Pencil size={15} />
                   </button>
                   <button
                     type="button"
                     aria-label="Delete assistant"
                     onClick={(e) => { e.stopPropagation(); setDeleteTarget(a) }}
-                    className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
-                    <Trash2 size={11} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
 
                 {/* Bot icon */}
-                <div className="w-8 h-8 rounded-md bg-[#136ddd] flex items-center justify-center mb-2 shrink-0">
-                  <Bot size={16} className="text-white" />
+                <div className="w-10 h-10 rounded-md bg-[#2a9d8f] flex items-center justify-center mb-3 shrink-0">
+                  <Bot size={20} className="text-white" />
                 </div>
 
                 {/* Name */}
-                <p className="text-sm font-semibold text-foreground truncate">
+                <p className="text-base font-semibold text-foreground truncate">
                   {a.name}
                 </p>
 
                 {/* Description */}
                 {a.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-sm text-muted-foreground mt-1.5 line-clamp-3 leading-relaxed">
                     {a.description}
                   </p>
                 )}
@@ -131,12 +128,12 @@ export default function AssistantPickerPage() {
             <button
               type="button"
               onClick={openCreate}
-              className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border/40 rounded-lg p-3 min-h-[7rem] hover:border-[#136ddd]/40 hover:bg-[#136ddd]/5 transition-colors"
+              className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border/40 rounded-lg p-5 min-h-[10rem] hover:border-[#2a9d8f]/40 hover:bg-[#2a9d8f]/5 transition-colors"
             >
-              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-                <Plus size={16} className="text-muted-foreground" />
+              <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
+                <Plus size={20} className="text-muted-foreground" />
               </div>
-              <span className="text-sm text-muted-foreground">New assistant</span>
+              <span className="text-base text-muted-foreground">New assistant</span>
             </button>
           </div>
         )}

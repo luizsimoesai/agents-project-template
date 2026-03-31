@@ -65,7 +65,7 @@ export default function SignupPage() {
           </Button>
           <p className="text-xs text-muted-foreground text-center">
             Already have an account?{" "}
-            <Link href="/login" className="underline" style={{ color: "#136ddd" }}>
+            <Link href="/login" className="underline" style={{ color: "#2a9d8f" }}>
               sign in
             </Link>
           </p>

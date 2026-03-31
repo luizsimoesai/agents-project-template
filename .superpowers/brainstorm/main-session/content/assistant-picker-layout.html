@@ -1,0 +1,129 @@
+<h2>Layout da tela de seleção de assistentes</h2>
+<p class="subtitle">Como você quer visualizar os cards após o login? Clique para selecionar.</p>
+
+<div class="cards">
+
+  <!-- Option A: Grid de cards compactos -->
+  <div class="card" data-choice="A" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#0d0f14;border-radius:6px;min-height:200px;">
+      <div style="font-size:10px;color:#136ddd;font-family:monospace;margin-bottom:12px;letter-spacing:0.1em;">SEUS ASSISTENTES</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px;">
+          <div style="width:24px;height:24px;background:#136ddd;border-radius:4px;margin-bottom:6px;"></div>
+          <div style="font-size:9px;color:#e6edf3;font-weight:600;margin-bottom:2px;">Suporte</div>
+          <div style="font-size:8px;color:#8b949e;line-height:1.3;">Atende clientes...</div>
+          <div style="display:flex;gap:3px;margin-top:6px;">
+            <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+            <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+          </div>
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px;">
+          <div style="width:24px;height:24px;background:#1f6feb;border-radius:4px;margin-bottom:6px;"></div>
+          <div style="font-size:9px;color:#e6edf3;font-weight:600;margin-bottom:2px;">Vendas</div>
+          <div style="font-size:8px;color:#8b949e;line-height:1.3;">Qualifica leads...</div>
+          <div style="display:flex;gap:3px;margin-top:6px;">
+            <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+            <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+          </div>
+        </div>
+        <div style="background:#161b22;border:2px dashed #30363d;border-radius:6px;padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="font-size:16px;color:#8b949e;">+</div>
+          <div style="font-size:8px;color:#8b949e;margin-top:2px;">Novo</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Grid 3 colunas</h3>
+      <p>Cards compactos em grade. Mais assistentes visíveis de uma vez. Editar/excluir via ícones no card.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Lista de cards maiores (2 colunas) -->
+  <div class="card" data-choice="B" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#0d0f14;border-radius:6px;min-height:200px;">
+      <div style="font-size:10px;color:#136ddd;font-family:monospace;margin-bottom:12px;letter-spacing:0.1em;">SEUS ASSISTENTES</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:20px;height:20px;background:#136ddd;border-radius:4px;"></div>
+              <div style="font-size:10px;color:#e6edf3;font-weight:600;">Suporte</div>
+            </div>
+            <div style="display:flex;gap:3px;">
+              <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+              <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="font-size:8px;color:#8b949e;line-height:1.4;margin-bottom:6px;">Atende clientes com respostas rápidas sobre produtos.</div>
+          <div style="font-size:7px;font-family:monospace;color:#58a6ff;">gpt-4o-mini</div>
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:20px;height:20px;background:#1f6feb;border-radius:4px;"></div>
+              <div style="font-size:10px;color:#e6edf3;font-weight:600;">Vendas</div>
+            </div>
+            <div style="display:flex;gap:3px;">
+              <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+              <div style="width:14px;height:14px;background:#21262d;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="font-size:8px;color:#8b949e;line-height:1.4;margin-bottom:6px;">Qualifica leads e agenda demonstrações automaticamente.</div>
+          <div style="font-size:7px;font-family:monospace;color:#58a6ff;">claude-sonnet-4</div>
+        </div>
+        <div style="background:#161b22;border:2px dashed #30363d;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:center;gap:6px;grid-column:span 2;">
+          <div style="font-size:14px;color:#8b949e;">+</div>
+          <div style="font-size:9px;color:#8b949e;">Adicionar novo assistant</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Grid 2 colunas (recomendado)</h3>
+      <p>Cards maiores com nome, descrição e modelo visíveis. Melhor legibilidade. Adicionar card fixo ao final.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Lista vertical -->
+  <div class="card" data-choice="C" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#0d0f14;border-radius:6px;min-height:200px;">
+      <div style="font-size:10px;color:#136ddd;font-family:monospace;margin-bottom:12px;letter-spacing:0.1em;">SEUS ASSISTENTES</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;background:#136ddd;border-radius:6px;"></div>
+            <div>
+              <div style="font-size:10px;color:#e6edf3;font-weight:600;">Suporte ao Cliente</div>
+              <div style="font-size:8px;color:#8b949e;">Atende clientes com respostas sobre produtos</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <div style="width:16px;height:16px;background:#21262d;border-radius:3px;"></div>
+            <div style="width:16px;height:16px;background:#21262d;border-radius:3px;"></div>
+          </div>
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;background:#1f6feb;border-radius:6px;"></div>
+            <div>
+              <div style="font-size:10px;color:#e6edf3;font-weight:600;">Assistente de Vendas</div>
+              <div style="font-size:8px;color:#8b949e;">Qualifica leads e agenda demos</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <div style="width:16px;height:16px;background:#21262d;border-radius:3px;"></div>
+            <div style="width:16px;height:16px;background:#21262d;border-radius:3px;"></div>
+          </div>
+        </div>
+        <div style="border:2px dashed #30363d;border-radius:6px;padding:10px;display:flex;align-items:center;gap:6px;">
+          <div style="font-size:12px;color:#8b949e;">+</div>
+          <div style="font-size:9px;color:#8b949e;">Adicionar novo assistant</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Lista vertical</h3>
+      <p>Linhas horizontais, semelhante a uma lista de itens. Mais compacto e fácil de escanear por nome.</p>
+    </div>
+  </div>
+
+</div>

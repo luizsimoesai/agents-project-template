@@ -10,7 +10,7 @@ describe("ChatMessage", () => {
     expect(screen.getByText("assistant")).toBeInTheDocument()
     expect(screen.getByText("Olá! Como posso ajudar?")).toBeInTheDocument()
     const label = screen.getByText("assistant")
-    expect(label).toHaveClass("text-[#136ddd]")
+    expect(label).toHaveClass("text-[#2a9d8f]")
   })
 
   it("renders human message with neutral label", () => {

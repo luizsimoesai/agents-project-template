@@ -82,7 +82,7 @@ export function AdminUserTable() {
             size="sm"
             className="font-mono text-xs"
             onClick={() => setFilter(f)}
-            style={filter === f ? { backgroundColor: "#136ddd" } : {}}
+            style={filter === f ? { backgroundColor: "#2a9d8f" } : {}}
           >
             {f === "all" ? "all" : f === "active" ? "active" : "inactive"}
           </Button>
@@ -115,7 +115,7 @@ export function AdminUserTable() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-1">
                         {u.name ?? "—"}
-                        {u.is_admin && <ShieldCheck size={12} style={{ color: "#136ddd" }} />}
+                        {u.is_admin && <ShieldCheck size={12} style={{ color: "#2a9d8f" }} />}
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{u.email}</TableCell>

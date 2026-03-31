@@ -2,12 +2,9 @@
 
 import { useState } from "react"
 import { useRouter, useParams, usePathname } from "next/navigation"
-import { useQueryClient } from "@tanstack/react-query"
-import { Bot, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut, Plus, Trash2 } from "lucide-react"
-import { useTheme } from "next-themes"
+import { Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { useAuthStore } from "@/lib/store/auth"
 import { useAssistants } from "@/lib/hooks/useAssistants"
 import { useThreads, useCreateThread, useDeleteThread } from "@/lib/hooks/useThreads"
 import {
@@ -21,23 +18,16 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import type { ThreadRead } from "@/lib/types"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { IconRail } from "./IconRail"
 
 export function DualSidebar() {
   const router = useRouter()
   const params = useParams()
   const pathname = usePathname()
-  const { theme, setTheme } = useTheme()
-  const { user, clearAuth } = useAuthStore()
-  const queryClient = useQueryClient()
 
   const assistantId = params.id as string | undefined
   const threadId = params.threadId as string | undefined
+  const isUtilityPage = pathname.startsWith("/profile") || pathname.startsWith("/admin")
 
   const { data: assistants } = useAssistants()
   const assistant = assistants?.find((a) => a.assistant_id === assistantId)
@@ -70,138 +60,93 @@ export function DualSidebar() {
     }
   }
 
-  function handleLogout() {
-    queryClient.clear()
-    clearAuth()
-    router.push("/login")
-  }
-
   return (
-    <TooltipProvider delay={300}>
+    <>
       <div className="flex h-full shrink-0">
-        {/* Icon rail — 44px */}
-        <div className="w-11 shrink-0 border-r border-border/60 bg-sidebar flex flex-col items-center py-2 gap-1">
-          {/* App logo */}
-          <div className="w-7 h-7 rounded-md bg-[#136ddd] flex items-center justify-center mb-2 shrink-0">
-            <Bot size={14} className="text-white" />
-          </div>
+        <IconRail />
 
-          {/* Back to assistant picker */}
-          <RailButton
-            icon={<LayoutGrid size={14} />}
-            label="Assistants"
-            onClick={() => router.push("/assistants")}
-          />
-
-          <div className="flex-1" />
-
-          {/* Footer icons */}
-          {user?.is_admin && (
-            <RailButton
-              icon={<ShieldCheck size={14} />}
-              label="Admin"
-              onClick={() => router.push("/admin")}
-              active={pathname.startsWith("/admin")}
-            />
-          )}
-          <RailButton
-            icon={<User size={14} />}
-            label="Profile"
-            onClick={() => router.push("/profile")}
-            active={pathname.startsWith("/profile")}
-          />
-          <RailButton
-            icon={theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-            label={theme === "dark" ? "Light theme" : "Dark theme"}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          />
-          <RailButton
-            icon={<LogOut size={14} />}
-            label="Logout"
-            onClick={handleLogout}
-            danger
-          />
-        </div>
-
-        {/* Wide panel — 180px */}
-        <div className="w-[180px] shrink-0 border-r border-border/60 bg-sidebar flex flex-col h-full">
-          {/* Assistant name + description */}
-          <div className="px-3 pt-3 pb-2 border-b border-border/40">
-            <p className="text-[15px] font-semibold text-foreground truncate">
-              {assistant?.name ?? ""}
-            </p>
-            {assistant?.description && (
-              <p className="text-[13px] text-muted-foreground mt-1 line-clamp-3">
-                {assistant.description}
+        {/* Wide panel — hidden on utility pages (profile, admin) */}
+        {!isUtilityPage && (
+          <div className="w-[180px] shrink-0 border-r border-border/60 bg-sidebar flex flex-col h-full">
+            {/* Assistant name + description */}
+            <div className="px-3 pt-3 pb-2 border-b border-border/40">
+              <p className="text-[15px] font-semibold text-foreground truncate">
+                {assistant?.name ?? ""}
               </p>
-            )}
-          </div>
+              {assistant?.description && (
+                <p className="text-[13px] text-foreground/70 mt-1 line-clamp-3">
+                  {assistant.description}
+                </p>
+              )}
+            </div>
 
-          {/* Thread list */}
-          <div className="flex-1 overflow-y-auto py-2 px-2">
-            <p className="px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60 select-none">
-              Conversations
-            </p>
-            {threads?.length === 0 && (
-              <p className="px-2 py-3 text-xs text-muted-foreground/70 font-mono text-center">
-                No conversations yet.
+            {/* Thread list */}
+            <div className="flex-1 overflow-y-auto py-2 px-2">
+              <p className="px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-foreground/50 select-none">
+                Conversations
               </p>
-            )}
-            {threads?.map((t) => (
-              <div
-                key={t.thread_id}
-                className={cn(
-                  "group/thread w-full flex items-center gap-2 px-2 py-2 rounded-md text-[13px] transition-colors",
-                  threadId === t.thread_id
-                    ? "bg-[#136ddd]/10 text-[#c0d8ff]"
-                    : "text-muted-foreground/80 hover:bg-accent hover:text-foreground"
-                )}
+              {threads?.length === 0 && (
+                <p className="px-2 py-3 text-xs text-foreground/60 font-mono text-center">
+                  No conversations yet.
+                </p>
+              )}
+              {threads?.map((t) => (
+                <div
+                  key={t.thread_id}
+                  className={cn(
+                    "group/thread w-full flex items-center gap-2 px-2 py-2 rounded-md text-[13px] transition-colors",
+                    threadId === t.thread_id
+                      ? "bg-[#2a9d8f]/10 text-[#c0d8ff]"
+                      : "text-foreground/75 hover:bg-white/10 hover:text-white"
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)
+                    }
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                  >
+                    <div
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full shrink-0",
+                        threadId === t.thread_id
+                          ? "bg-[#2a9d8f]"
+                          : "bg-muted-foreground/25"
+                      )}
+                    />
+                    <span className="truncate font-mono">
+                      {t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Delete conversation"
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(t) }}
+                    className="shrink-0 opacity-0 group-hover/thread:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* New conversation */}
+            <div className="p-2 border-t border-border/40">
+              <button
+                type="button"
+                onClick={handleNewThread}
+                disabled={createThread.isPending}
+                className="w-full flex items-center gap-2 px-2 py-2 border border-dashed border-border/40 rounded-md text-[13px] text-foreground/70 hover:text-white hover:border-[#2a9d8f]/40 hover:bg-white/10 transition-colors disabled:opacity-40"
               >
-                <button
-                  type="button"
-                  onClick={() =>
-                    router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)
-                  }
-                  className="flex items-center gap-2 flex-1 min-w-0 text-left"
-                >
-                  <div
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      threadId === t.thread_id
-                        ? "bg-[#136ddd]"
-                        : "bg-muted-foreground/25"
-                    )}
-                  />
-                  <span className="truncate font-mono">
-                    {t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  aria-label="Delete conversation"
-                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(t) }}
-                  className="shrink-0 opacity-0 group-hover/thread:opacity-100 transition-opacity w-4 h-4 flex items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 size={10} />
-                </button>
-              </div>
-            ))}
+                <Plus size={12} />
+                <span>New conversation</span>
+              </button>
+            </div>
           </div>
-
-          {/* New conversation */}
-          <div className="p-2 border-t border-border/40">
-            <button
-              type="button"
-              onClick={handleNewThread}
-              disabled={createThread.isPending}
-              className="w-full flex items-center gap-2 px-2 py-2 border border-dashed border-border/40 rounded-md text-[13px] text-muted-foreground/70 hover:text-foreground hover:border-[#136ddd]/40 hover:bg-[#136ddd]/5 transition-colors disabled:opacity-40"
-            >
-              <Plus size={12} />
-              <span>New conversation</span>
-            </button>
-          </div>
-        </div>
+        )}
       </div>
+
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(open) => { if (!open) setDeleteTarget(undefined) }}
@@ -225,42 +170,6 @@ export function DualSidebar() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </TooltipProvider>
-  )
-}
-
-function RailButton({
-  icon,
-  label,
-  onClick,
-  active,
-  danger,
-}: {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-  active?: boolean
-  danger?: boolean
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-          type="button"
-          onClick={onClick}
-          className={cn(
-            "w-8 h-8 rounded-md flex items-center justify-center transition-colors",
-            active
-              ? "text-[#136ddd] bg-[#136ddd]/10"
-              : danger
-                ? "text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10"
-                : "text-muted-foreground/40 hover:text-foreground hover:bg-accent"
-          )}
-        >
-          {icon}
-      </TooltipTrigger>
-      <TooltipContent side="right" className="text-xs">
-        {label}
-      </TooltipContent>
-    </Tooltip>
+    </>
   )
 }

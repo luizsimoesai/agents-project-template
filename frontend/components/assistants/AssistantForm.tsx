@@ -40,7 +40,7 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
+    values: {
       name: assistant?.name ?? "",
       description: assistant?.description ?? "",
       model: (assistant?.context as { model?: string })?.model ?? "",
@@ -114,7 +114,7 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
               type="submit"
               disabled={isSubmitting}
               className="flex-1"
-              style={{ backgroundColor: "#136ddd" }}
+              style={{ backgroundColor: "#2a9d8f" }}
             >
               {isSubmitting ? "salvando..." : "salvar"}
             </Button>
