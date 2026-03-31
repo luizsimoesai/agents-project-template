@@ -10,14 +10,14 @@ describe("ChatMessage", () => {
     expect(screen.getByText("assistant")).toBeInTheDocument()
     expect(screen.getByText("Olá! Como posso ajudar?")).toBeInTheDocument()
     const label = screen.getByText("assistant")
-    expect(label).toHaveStyle({ color: "#136ddd" })
+    expect(label).toHaveClass("text-[#136ddd]")
   })
 
   it("renders human message with neutral label", () => {
     render(
       <ChatMessage role="human" content="Me ajuda com isso" isStreaming={false} />
     )
-    expect(screen.getByText("você")).toBeInTheDocument()
+    expect(screen.getByText("you")).toBeInTheDocument()
   })
 
   it("shows streaming cursor when isStreaming is true", () => {
