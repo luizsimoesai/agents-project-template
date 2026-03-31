@@ -60,8 +60,12 @@ export interface AssistantUpdate {
 export interface ThreadRead {
   thread_id: string
   status: "idle" | "busy" | "interrupted" | "error"
-  assistant_id: string | null
-  thread_name: string | null
+  metadata: {
+    assistant_id?: string
+    thread_name?: string
+    owner?: string
+    [key: string]: unknown
+  }
   created_at: string
   updated_at: string
 }
@@ -69,17 +73,6 @@ export interface ThreadRead {
 export interface ThreadCreate {
   assistant_id: string
   thread_name?: string
-}
-
-export interface MessageRead {
-  role: string
-  content: string
-}
-
-export interface ChatResponse {
-  thread_id: string
-  message: string
-  role: string
 }
 
 export interface ApiError {
