@@ -105,13 +105,14 @@ export function AppSidebar() {
           </p>
         )}
         {threads?.map((t) => (
-          <div
+          <button
             key={t.thread_id}
+            type="button"
             onClick={() =>
               router.push(`/assistants/${selectedId}/threads/${t.thread_id}`)
             }
             className={cn(
-              "flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-xs transition-colors",
+              "w-full text-left flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-xs transition-colors",
               urlThreadId === t.thread_id
                 ? "bg-[#136ddd]/10 text-[#c0d8ff]"
                 : "text-muted-foreground/70 hover:bg-accent hover:text-foreground"
@@ -124,14 +125,15 @@ export function AppSidebar() {
               )}
             />
             <span className="truncate font-mono">
-              {t.thread_name ?? t.thread_id.slice(0, 8) + "…"}
+              {`${t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}`}
             </span>
-          </div>
+          </button>
         ))}
       </div>
 
       {/* Footer nav */}
       <div className="border-t border-border/60 p-2 space-y-px">
+        {/* Exact match: only active on /assistants management page, not during chat sessions */}
         <FooterItem
           label="Assistants"
           icon={<LayoutGrid size={13} />}
