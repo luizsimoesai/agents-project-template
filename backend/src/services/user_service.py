@@ -141,7 +141,6 @@ def get_user_service(
 ) -> UserService:
     """FastAPI dependency factory for UserService.
 
-    This pattern mirrors get_assistant_service from the Aegra framework:
     FastAPI resolves the AsyncSession via Depends(get_session) and passes it
     to the service constructor, keeping the service stateless and testable.
     """
