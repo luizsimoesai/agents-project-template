@@ -114,13 +114,13 @@ export default function AssistantPickerPage() {
                 </div>
 
                 {/* Name */}
-                <p className="text-xs font-semibold text-foreground truncate">
+                <p className="text-sm font-semibold text-foreground truncate">
                   {a.name}
                 </p>
 
                 {/* Description */}
                 {a.description && (
-                  <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                     {a.description}
                   </p>
                 )}
@@ -136,7 +136,7 @@ export default function AssistantPickerPage() {
               <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
                 <Plus size={16} className="text-muted-foreground" />
               </div>
-              <span className="text-xs text-muted-foreground">New assistant</span>
+              <span className="text-sm text-muted-foreground">New assistant</span>
             </button>
           </div>
         )}

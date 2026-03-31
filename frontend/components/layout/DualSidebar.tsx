@@ -127,11 +127,11 @@ export function DualSidebar() {
         <div className="w-[180px] shrink-0 border-r border-border/60 bg-sidebar flex flex-col h-full">
           {/* Assistant name + description */}
           <div className="px-3 pt-3 pb-2 border-b border-border/40">
-            <p className="text-sm font-semibold text-foreground truncate">
+            <p className="text-[15px] font-semibold text-foreground truncate">
               {assistant?.name ?? ""}
             </p>
             {assistant?.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+              <p className="text-[13px] text-muted-foreground mt-1 line-clamp-3">
                 {assistant.description}
               </p>
             )}
@@ -139,11 +139,11 @@ export function DualSidebar() {
 
           {/* Thread list */}
           <div className="flex-1 overflow-y-auto py-2 px-2">
-            <p className="px-2 py-1 text-[9px] font-mono uppercase tracking-[0.2em] text-muted-foreground/40 select-none">
+            <p className="px-2 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60 select-none">
               Conversations
             </p>
             {threads?.length === 0 && (
-              <p className="px-2 py-3 text-xs text-muted-foreground/40 font-mono text-center">
+              <p className="px-2 py-3 text-xs text-muted-foreground/70 font-mono text-center">
                 No conversations yet.
               </p>
             )}
@@ -151,10 +151,10 @@ export function DualSidebar() {
               <div
                 key={t.thread_id}
                 className={cn(
-                  "group/thread w-full flex items-center gap-2 px-2 py-2 rounded-md text-xs transition-colors",
+                  "group/thread w-full flex items-center gap-2 px-2 py-2 rounded-md text-[13px] transition-colors",
                   threadId === t.thread_id
                     ? "bg-[#136ddd]/10 text-[#c0d8ff]"
-                    : "text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+                    : "text-muted-foreground/80 hover:bg-accent hover:text-foreground"
                 )}
               >
                 <button
@@ -194,7 +194,7 @@ export function DualSidebar() {
               type="button"
               onClick={handleNewThread}
               disabled={createThread.isPending}
-              className="w-full flex items-center gap-2 px-2 py-2 border border-dashed border-border/40 rounded-md text-xs text-muted-foreground/50 hover:text-foreground hover:border-[#136ddd]/40 hover:bg-[#136ddd]/5 transition-colors disabled:opacity-40"
+              className="w-full flex items-center gap-2 px-2 py-2 border border-dashed border-border/40 rounded-md text-[13px] text-muted-foreground/70 hover:text-foreground hover:border-[#136ddd]/40 hover:bg-[#136ddd]/5 transition-colors disabled:opacity-40"
             >
               <Plus size={12} />
               <span>New conversation</span>
