@@ -67,6 +67,7 @@ export default function AssistantPickerPage() {
                 key={a.assistant_id}
                 role="button"
                 tabIndex={0}
+                aria-label={`Select ${a.name}`}
                 onClick={() => router.push(`/assistants/${a.assistant_id}/threads`)}
                 onKeyDown={(e) =>
                   e.key === "Enter" &&
@@ -78,6 +79,7 @@ export default function AssistantPickerPage() {
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
+                    aria-label="Edit assistant"
                     onClick={(e) => { e.stopPropagation(); openEdit(a) }}
                     className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent"
                   >
@@ -85,7 +87,11 @@ export default function AssistantPickerPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(a.assistant_id) }}
+                    aria-label="Delete assistant"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (window.confirm(`Delete "${a.name}"?`)) handleDelete(a.assistant_id)
+                    }}
                     className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 size={11} />
