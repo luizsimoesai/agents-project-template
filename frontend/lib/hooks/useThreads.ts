@@ -11,7 +11,11 @@ export function useThreads(assistantId?: string) {
     queryFn: fetchThreads,
     select: (threads) =>
       assistantId
-        ? threads.filter((t) => t.metadata?.assistant_id === assistantId)
+        ? threads.filter(
+            (t) =>
+              t.metadata?.thread_assistant_id === assistantId ||
+              t.metadata?.assistant_id === assistantId
+          )
         : threads,
   })
 }

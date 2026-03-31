@@ -31,7 +31,8 @@ export async function createThread(data: ThreadCreate): Promise<ThreadRead> {
     method: "POST",
     body: JSON.stringify({
       metadata: {
-        assistant_id: data.assistant_id,
+        // assistant_id is overwritten by Aegra; use thread_assistant_id as our custom key
+        thread_assistant_id: data.assistant_id,
         ...(data.thread_name ? { thread_name: data.thread_name } : {}),
       },
     }),

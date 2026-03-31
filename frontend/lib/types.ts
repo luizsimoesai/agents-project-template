@@ -61,7 +61,10 @@ export interface ThreadRead {
   thread_id: string
   status: "idle" | "busy" | "interrupted" | "error"
   metadata: {
-    assistant_id?: string
+    // assistant_id is reserved by Aegra (tracks last-used assistant after runs).
+    // thread_assistant_id is our custom key set at creation time.
+    assistant_id?: string | null
+    thread_assistant_id?: string
     thread_name?: string
     owner?: string
     [key: string]: unknown
