@@ -13,19 +13,19 @@ async function throwOnError(res: Response, fallback: string): Promise<never> {
 }
 
 export async function fetchAssistants(): Promise<AssistantRead[]> {
-  const res = await apiClient("/api/v1/assistants")
+  const res = await apiClient("/assistants")
   if (!res.ok) return throwOnError(res, "Erro ao buscar assistentes")
   return res.json()
 }
 
 export async function fetchAssistant(id: string): Promise<AssistantRead> {
-  const res = await apiClient(`/api/v1/assistants/${id}`)
+  const res = await apiClient(`/assistants/${id}`)
   if (!res.ok) return throwOnError(res, "Assistente não encontrado")
   return res.json()
 }
 
 export async function createAssistant(data: AssistantCreate): Promise<AssistantRead> {
-  const res = await apiClient("/api/v1/assistants", {
+  const res = await apiClient("/assistants", {
     method: "POST",
     body: JSON.stringify({ graph_id: "agent", ...data }),
   })
@@ -37,7 +37,7 @@ export async function updateAssistant(
   id: string,
   data: AssistantUpdate
 ): Promise<AssistantRead> {
-  const res = await apiClient(`/api/v1/assistants/${id}`, {
+  const res = await apiClient(`/assistants/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   })
@@ -46,6 +46,6 @@ export async function updateAssistant(
 }
 
 export async function deleteAssistant(id: string): Promise<void> {
-  const res = await apiClient(`/api/v1/assistants/${id}`, { method: "DELETE" })
+  const res = await apiClient(`/assistants/${id}`, { method: "DELETE" })
   if (!res.ok) return throwOnError(res, "Erro ao apagar assistente")
 }
