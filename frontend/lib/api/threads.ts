@@ -44,3 +44,12 @@ export async function deleteThread(id: string): Promise<void> {
   const res = await apiClient(`/threads/${id}`, { method: "DELETE" })
   if (!res.ok) return throwOnError(res, "Erro ao apagar conversa")
 }
+
+// GET /threads/{id}/state — returns the current thread state including all messages.
+// Returns an empty array if the thread has no state yet (new thread).
+export async function fetchThreadState(threadId: string): Promise<unknown[]> {
+  const res = await apiClient(`/threads/${threadId}/state`)
+  if (!res.ok) return []
+  const data = await res.json()
+  return data?.values?.messages ?? []
+}
