@@ -76,3 +76,29 @@ async def authenticate(headers: dict[str, str]) -> dict[str, object]:
         "display_name": user_id,
         "permissions": ["authenticated"],
     }
+
+
+@auth.on.assistants.create
+async def set_assistant_owner(ctx, value):
+    """Inject the authenticated user's identity into assistant metadata on creation."""
+    value.setdefault("metadata", {})["owner"] = ctx.user.identity
+    return value
+
+
+@auth.on.assistants.search
+async def filter_assistants_by_owner(ctx, value):
+    """Restrict assistant list/search results to those owned by the current user."""
+    return {"metadata": {"owner": ctx.user.identity}}
+
+
+@auth.on.threads.create
+async def set_thread_owner(ctx, value):
+    """Inject the authenticated user's identity into thread metadata on creation."""
+    value.setdefault("metadata", {})["owner"] = ctx.user.identity
+    return value
+
+
+@auth.on.threads.search
+async def filter_threads_by_owner(ctx, value):
+    """Restrict thread search results to those owned by the current user."""
+    return {"metadata": {"owner": ctx.user.identity}}
