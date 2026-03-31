@@ -12,18 +12,18 @@ async function throwOnError(res: Response, fallback: string): Promise<never> {
   throw new Error(detail)
 }
 
-// POST /threads/search — Aegra filters by owner automatically via @auth.on handler.
-// Pass optional metadata filter (e.g. assistant_id) to narrow results further.
-export async function fetchThreads(filter?: { assistant_id?: string }): Promise<ThreadRead[]> {
-  const body = filter?.assistant_id
-    ? { metadata: { assistant_id: filter.assistant_id } }
-    : {}
+// POST /threads/search — Aegra scopes results to the authenticated user via identity.
+// We fetch all threads for the user and filter client-side, avoiding metadata filter
+// format differences between thread creation paths (native vs legacy).
+export async function fetchThreads(): Promise<ThreadRead[]> {
   const res = await apiClient("/threads/search", {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify({}),
   })
   if (!res.ok) return throwOnError(res, "Erro ao buscar conversas")
-  return res.json()
+  const data = await res.json()
+  // Handle both plain array and wrapped { threads: [...] } response shapes
+  return Array.isArray(data) ? data : (data.threads ?? [])
 }
 
 export async function createThread(data: ThreadCreate): Promise<ThreadRead> {
