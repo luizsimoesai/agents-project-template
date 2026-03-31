@@ -51,7 +51,7 @@ export function DualSidebar() {
   return (
     <div className="flex h-full shrink-0">
       {/* Icon rail — 44px */}
-      <TooltipProvider delayDuration={300}>
+      <TooltipProvider delay={300}>
         <div className="w-11 shrink-0 border-r border-border/60 bg-sidebar flex flex-col items-center py-2 gap-1">
           {/* App logo */}
           <div className="w-7 h-7 rounded-md bg-[#136ddd] flex items-center justify-center mb-2 shrink-0">
@@ -181,8 +181,7 @@ function RailButton({
 }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <button
+      <TooltipTrigger
           type="button"
           onClick={onClick}
           className={cn(
@@ -195,7 +194,6 @@ function RailButton({
           )}
         >
           {icon}
-        </button>
       </TooltipTrigger>
       <TooltipContent side="right" className="text-xs">
         {label}
