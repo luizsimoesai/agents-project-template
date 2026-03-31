@@ -6,8 +6,6 @@ import { toast } from "sonner"
 import { ChatMessage } from "./ChatMessage"
 import { ChatInput } from "./ChatInput"
 import { useAuthStore } from "@/lib/store/auth"
-import { useThreadHistory } from "@/lib/hooks/useThreads"
-import { Skeleton } from "@/components/ui/skeleton"
 import type { Message } from "@langchain/langgraph-sdk"
 import type { AssistantRead } from "@/lib/types"
 
@@ -36,8 +34,6 @@ export function ChatView({ threadId, assistant }: ChatViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:2024"
 
-  const { data: history, isLoading: historyLoading } = useThreadHistory(threadId)
-
   const { messages, submit, isLoading: isStreaming, stop } = useStream<{
     messages: Array<{ role: string; content: string }>
   }>({
@@ -57,36 +53,24 @@ export function ChatView({ threadId, assistant }: ChatViewProps) {
   // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, history])
+  }, [messages])
 
   function handleSubmit(content: string) {
     submit({ messages: [{ role: "human", content }] })
   }
 
-  const historyToShow = history ?? []
-  const streamMessages = messages ?? []
-
-  // When streaming has messages, useStream manages the full conversation
-  // to avoid duplicates with history
-  const displayMessages: Array<{ role: string; content: string }> =
-    streamMessages.length > 0
-      ? streamMessages.map((m) => ({
-          role: getMessageRole(m),
-          content: getMessageContent(m),
-        }))
-      : historyToShow.map((m) => ({ role: m.role, content: m.content }))
+  const displayMessages: Array<{ role: string; content: string }> = (messages ?? []).map(
+    (m) => ({
+      role: getMessageRole(m),
+      content: getMessageContent(m),
+    })
+  )
 
   return (
     <div className="flex flex-col h-full">
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto divide-y divide-border/60">
-        {historyLoading && streamMessages.length === 0 ? (
-          <div className="space-y-4 p-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        ) : displayMessages.length === 0 ? (
+        {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center text-muted-foreground px-6 py-4">
             <p className="font-mono text-sm">start the conversation below</p>
           </div>
