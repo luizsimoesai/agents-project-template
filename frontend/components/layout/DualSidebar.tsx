@@ -1,14 +1,26 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter, useParams, usePathname } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { Bot, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut, Plus } from "lucide-react"
+import { Bot, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut, Plus, Trash2 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/lib/store/auth"
 import { useAssistants } from "@/lib/hooks/useAssistants"
-import { useThreads, useCreateThread } from "@/lib/hooks/useThreads"
+import { useThreads, useCreateThread, useDeleteThread } from "@/lib/hooks/useThreads"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog"
+import type { ThreadRead } from "@/lib/types"
 import {
   Tooltip,
   TooltipContent,
@@ -31,6 +43,8 @@ export function DualSidebar() {
   const assistant = assistants?.find((a) => a.assistant_id === assistantId)
   const { data: threads } = useThreads(assistantId)
   const createThread = useCreateThread()
+  const deleteThread = useDeleteThread()
+  const [deleteTarget, setDeleteTarget] = useState<ThreadRead | undefined>(undefined)
 
   async function handleNewThread() {
     if (!assistantId) return
@@ -39,6 +53,20 @@ export function DualSidebar() {
       router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)
     } catch {
       toast.error("Failed to create conversation")
+    }
+  }
+
+  async function handleDeleteThread() {
+    if (!deleteTarget) return
+    try {
+      await deleteThread.mutateAsync(deleteTarget.thread_id)
+      toast.success("Conversation deleted")
+      if (threadId === deleteTarget.thread_id) {
+        router.push(`/assistants/${assistantId}/threads`)
+      }
+      setDeleteTarget(undefined)
+    } catch {
+      toast.error("Failed to delete conversation")
     }
   }
 
@@ -120,31 +148,43 @@ export function DualSidebar() {
               </p>
             )}
             {threads?.map((t) => (
-              <button
+              <div
                 key={t.thread_id}
-                type="button"
-                onClick={() =>
-                  router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)
-                }
                 className={cn(
-                  "w-full text-left flex items-center gap-2 px-2 py-2 rounded-md text-xs transition-colors",
+                  "group/thread w-full flex items-center gap-2 px-2 py-2 rounded-md text-xs transition-colors",
                   threadId === t.thread_id
                     ? "bg-[#136ddd]/10 text-[#c0d8ff]"
                     : "text-muted-foreground/70 hover:bg-accent hover:text-foreground"
                 )}
               >
-                <div
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full shrink-0",
-                    threadId === t.thread_id
-                      ? "bg-[#136ddd]"
-                      : "bg-muted-foreground/25"
-                  )}
-                />
-                <span className="truncate font-mono">
-                  {t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)
+                  }
+                  className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                >
+                  <div
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full shrink-0",
+                      threadId === t.thread_id
+                        ? "bg-[#136ddd]"
+                        : "bg-muted-foreground/25"
+                    )}
+                  />
+                  <span className="truncate font-mono">
+                    {t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Delete conversation"
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(t) }}
+                  className="shrink-0 opacity-0 group-hover/thread:opacity-100 transition-opacity w-4 h-4 flex items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 size={10} />
+                </button>
+              </div>
             ))}
           </div>
 
@@ -162,6 +202,29 @@ export function DualSidebar() {
           </div>
         </div>
       </div>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined) }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this conversation? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteThread}
+              disabled={deleteThread.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteThread.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   )
 }
