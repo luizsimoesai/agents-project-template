@@ -44,7 +44,7 @@ describe("apiClient", () => {
     vi.stubGlobal("fetch", fetchMock)
 
     const { apiClient } = await import("./client")
-    const res = await apiClient("/api/v1/assistants")
+    const res = await apiClient("/assistants")
     const data = await res.json()
     expect(data).toEqual({ id: 1 })
   })
@@ -92,7 +92,7 @@ describe("apiClient", () => {
     vi.stubGlobal("fetch", fetchMock)
 
     const { apiClient } = await import("./client")
-    const res = await apiClient("/api/v1/assistants")
+    const res = await apiClient("/assistants")
     expect(res.status).toBe(200)
 
     // Verify the retry used the new token
@@ -112,7 +112,7 @@ describe("apiClient", () => {
     vi.stubGlobal("window", { location: { href: "" } })
 
     const { apiClient } = await import("./client")
-    const res = await apiClient("/api/v1/assistants")
+    const res = await apiClient("/assistants")
     expect(res.status).toBe(401)
     expect(useAuthStore.getState().accessToken).toBeNull()
   })

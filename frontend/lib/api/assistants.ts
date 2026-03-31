@@ -15,7 +15,8 @@ async function throwOnError(res: Response, fallback: string): Promise<never> {
 export async function fetchAssistants(): Promise<AssistantRead[]> {
   const res = await apiClient("/assistants")
   if (!res.ok) return throwOnError(res, "Erro ao buscar assistentes")
-  return res.json()
+  const data = await res.json()
+  return Array.isArray(data) ? data : (data.assistants ?? [])
 }
 
 export async function fetchAssistant(id: string): Promise<AssistantRead> {
