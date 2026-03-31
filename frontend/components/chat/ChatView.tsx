@@ -49,8 +49,8 @@ export function ChatView({ threadId, assistant }: ChatViewProps) {
       : {},
     messagesKey: "messages",
     onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Conexão perdida"
-      toast.error("Erro no streaming: " + message)
+      const message = err instanceof Error ? err.message : "Connection lost"
+      toast.error("Streaming error: " + message)
     },
   })
 
@@ -79,16 +79,16 @@ export function ChatView({ threadId, assistant }: ChatViewProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto divide-y divide-border/60">
         {historyLoading && streamMessages.length === 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-4 p-6">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
         ) : displayMessages.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-muted-foreground">
-            <p className="font-mono text-sm">inicie a conversa abaixo</p>
+          <div className="h-full flex items-center justify-center text-muted-foreground px-6 py-4">
+            <p className="font-mono text-sm">start the conversation below</p>
           </div>
         ) : (
           displayMessages.map((msg, i) => (

@@ -16,7 +16,7 @@ export default function AssistantDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
 
   if (isLoading) return <div className="p-6"><Skeleton className="h-8 w-48" /></div>
-  if (!assistant) return <div className="p-6 font-mono text-sm text-muted-foreground">assistente não encontrado</div>
+  if (!assistant) return <div className="p-6 font-mono text-sm text-muted-foreground">assistant not found</div>
 
   return (
     <div className="p-6 space-y-4">

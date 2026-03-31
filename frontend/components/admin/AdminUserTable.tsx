@@ -46,22 +46,22 @@ export function AdminUserTable() {
     try {
       if (isActive) {
         await deactivateUser.mutateAsync(id)
-        toast.success("Usuário desativado")
+        toast.success("User deactivated")
       } else {
         await activateUser.mutateAsync(id)
-        toast.success("Usuário ativado")
+        toast.success("User activated")
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro")
+      toast.error(err instanceof Error ? err.message : "An error occurred")
     }
   }
 
   async function handleDelete(id: string) {
     try {
       await deleteUser.mutateAsync(id)
-      toast.success("Usuário apagado")
+      toast.success("User deleted")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao apagar usuário")
+      toast.error(err instanceof Error ? err.message : "Failed to delete user")
     }
   }
 
@@ -70,7 +70,7 @@ export function AdminUserTable() {
       {/* Filters */}
       <div className="flex gap-2 items-center flex-wrap">
         <Input
-          placeholder="buscar por nome..."
+          placeholder="search by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-[240px] font-mono text-sm"
@@ -84,7 +84,7 @@ export function AdminUserTable() {
             onClick={() => setFilter(f)}
             style={filter === f ? { backgroundColor: "#136ddd" } : {}}
           >
-            {f === "all" ? "todos" : f === "active" ? "ativos" : "inativos"}
+            {f === "all" ? "all" : f === "active" ? "active" : "inactive"}
           </Button>
         ))}
       </div>
@@ -94,11 +94,11 @@ export function AdminUserTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-mono text-xs">nome</TableHead>
+              <TableHead className="font-mono text-xs">name</TableHead>
               <TableHead className="font-mono text-xs">email</TableHead>
               <TableHead className="font-mono text-xs">status</TableHead>
-              <TableHead className="font-mono text-xs">criado em</TableHead>
-              <TableHead className="font-mono text-xs w-[80px]">ações</TableHead>
+              <TableHead className="font-mono text-xs">created at</TableHead>
+              <TableHead className="font-mono text-xs w-[80px]">actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,11 +125,11 @@ export function AdminUserTable() {
                         className="font-mono text-xs cursor-pointer"
                         onClick={() => handleToggleActive(u.id, u.is_active)}
                       >
-                        {u.is_active ? "ativo" : "inativo"}
+                        {u.is_active ? "active" : "inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
-                      {new Date(u.created_at).toLocaleDateString("pt-BR")}
+                      {new Date(u.created_at).toLocaleDateString("en-US")}
                     </TableCell>
                     <TableCell>
                       <AlertDialog>
@@ -147,18 +147,18 @@ export function AdminUserTable() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle className="font-mono">apagar usuário?</AlertDialogTitle>
+                            <AlertDialogTitle className="font-mono">delete user?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Esta ação é permanente. O usuário <strong>{u.email}</strong> será removido.
+                              This action is permanent. The user <strong>{u.email}</strong> will be removed.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>cancelar</AlertDialogCancel>
+                            <AlertDialogCancel>cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDelete(u.id)}
                               className="bg-destructive hover:bg-destructive/90"
                             >
-                              apagar
+                              delete
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -170,7 +170,7 @@ export function AdminUserTable() {
         </Table>
       </div>
       <p className="text-xs text-muted-foreground font-mono">
-        {filtered.length} usuário{filtered.length !== 1 ? "s" : ""}
+        {filtered.length} user{filtered.length !== 1 ? "s" : ""}
       </p>
     </div>
   )

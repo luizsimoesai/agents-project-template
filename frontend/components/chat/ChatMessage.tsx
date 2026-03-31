@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils"
-import { Separator } from "@/components/ui/separator"
 
 interface ChatMessageProps {
   role: string
@@ -11,28 +10,38 @@ export function ChatMessage({ role, content, isStreaming = false }: ChatMessageP
   const isAI = role === "ai" || role === "assistant"
 
   return (
-    <div className="py-3">
-      <div className="mb-1.5 flex items-center gap-2">
+    <div className={cn("group py-5 px-6", isAI ? "bg-transparent" : "")}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <div
+          className={cn(
+            "w-1.5 h-1.5 rounded-full shrink-0",
+            isAI ? "bg-[#136ddd]" : "bg-muted-foreground/50"
+          )}
+        />
         <span
-          className="font-mono text-[11px] uppercase tracking-widest font-semibold"
-          style={{ color: isAI ? "#136ddd" : undefined }}
+          className={cn(
+            "font-mono text-[10px] uppercase tracking-[0.18em] font-medium",
+            isAI ? "text-[#136ddd]" : "text-muted-foreground"
+          )}
         >
-          {isAI ? "assistant" : "você"}
+          {isAI ? "assistant" : "you"}
         </span>
       </div>
-      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+      <div
+        className={cn(
+          "pl-4.5 text-sm leading-7 whitespace-pre-wrap",
+          isAI ? "text-foreground" : "text-foreground/75"
+        )}
+      >
         {content}
         {isStreaming && (
           <span
             data-testid="streaming-cursor"
-            className={cn(
-              "inline-block w-[5px] h-[14px] bg-[#136ddd] rounded-sm ml-0.5 align-middle",
-              "animate-pulse"
-            )}
+            className="inline-block w-0.5 h-3.75 bg-[#136ddd] ml-0.5 align-middle"
+            style={{ animation: "blink 1s steps(1) infinite" }}
           />
         )}
-      </p>
-      <Separator className="mt-3" />
+      </div>
     </div>
   )
 }

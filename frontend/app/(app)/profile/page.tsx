@@ -13,8 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import { useProfile, useUpdateProfile } from "@/lib/hooks/useProfile"
 
 const schema = z.object({
-  name: z.string().min(1, "Nome obrigatório"),
-  email: z.string().email("Email inválido"),
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email"),
 })
 
 type FormData = z.infer<typeof schema>
@@ -32,9 +32,9 @@ export default function ProfilePage() {
   async function onSubmit(data: FormData) {
     try {
       await updateProfile.mutateAsync(data)
-      toast.success("Perfil atualizado")
+      toast.success("Profile updated")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar perfil")
+      toast.error(err instanceof Error ? err.message : "Failed to update profile")
     }
   }
 
@@ -52,25 +52,25 @@ export default function ProfilePage() {
     <div className="p-8 max-w-md">
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-xl font-mono font-semibold" style={{ color: "#136ddd" }}>
-          perfil
+          profile
         </h1>
         {user?.is_admin && <Badge variant="outline" className="font-mono text-xs">admin</Badge>}
-        {!user?.is_active && <Badge variant="destructive" className="font-mono text-xs">inativo</Badge>}
+        {!user?.is_active && <Badge variant="destructive" className="font-mono text-xs">inactive</Badge>}
       </div>
 
       <Card className="border-border">
         <CardHeader>
-          <CardTitle className="font-mono text-sm">dados da conta</CardTitle>
+          <CardTitle className="font-mono text-sm">account details</CardTitle>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             <div className="space-y-1">
-              <Label>nome</Label>
+              <Label>Name</Label>
               <Input {...register("name")} />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label>email</Label>
+              <Label>Email</Label>
               <Input type="email" {...register("email")} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
@@ -79,7 +79,7 @@ export default function ProfilePage() {
               <p className="font-mono text-xs text-muted-foreground">{user?.id}</p>
             </div>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "salvando..." : "salvar"}
+              {isSubmitting ? "saving..." : "save"}
             </Button>
           </CardContent>
         </form>

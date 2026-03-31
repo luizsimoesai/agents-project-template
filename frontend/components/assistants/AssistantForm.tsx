@@ -15,7 +15,7 @@ import { useCreateAssistant, useUpdateAssistant } from "@/lib/hooks/useAssistant
 import type { AssistantRead } from "@/lib/types"
 
 const schema = z.object({
-  name: z.string().min(1, "Nome obrigatório"),
+  name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   model: z.string().optional(),
   system_prompt: z.string().optional(),
@@ -56,15 +56,15 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
     try {
       if (assistant) {
         await updateAssistant.mutateAsync(payload)
-        toast.success("Assistente atualizado")
+        toast.success("Assistant updated")
       } else {
         await createAssistant.mutateAsync(payload)
-        toast.success("Assistente criado")
+        toast.success("Assistant created")
       }
       reset()
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar assistente")
+      toast.error(err instanceof Error ? err.message : "Failed to save assistant")
     }
   }
 
@@ -73,17 +73,17 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
       <SheetContent className="w-[400px] sm:w-[480px]">
         <SheetHeader>
           <SheetTitle className="font-mono">
-            {assistant ? "editar assistente" : "novo assistente"}
+            {assistant ? "edit assistant" : "new assistant"}
           </SheetTitle>
         </SheetHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
           <div className="space-y-1">
-            <Label>nome</Label>
+            <Label>Name</Label>
             <Input {...register("name")} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-1">
-            <Label>descrição</Label>
+            <Label>Description</Label>
             <Input {...register("description")} />
           </div>
           <div className="space-y-1">
@@ -98,16 +98,16 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
             <Label className="font-mono text-xs">system_prompt</Label>
             <Textarea
               {...register("system_prompt")}
-              placeholder="Você é um assistente útil..."
+              placeholder="You are a helpful assistant..."
               className="font-mono text-sm min-h-[120px]"
             />
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={isSubmitting} className="flex-1">
-              {isSubmitting ? "salvando..." : "salvar"}
+              {isSubmitting ? "saving..." : "save"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}>
-              cancelar
+              cancel
             </Button>
           </div>
         </form>

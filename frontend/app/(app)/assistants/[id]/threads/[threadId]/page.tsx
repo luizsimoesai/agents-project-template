@@ -25,7 +25,7 @@ export default function ChatPage() {
   if (!assistant) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="font-mono text-sm text-muted-foreground">assistente não encontrado</p>
+        <p className="font-mono text-sm text-muted-foreground">assistant not found</p>
       </div>
     )
   }

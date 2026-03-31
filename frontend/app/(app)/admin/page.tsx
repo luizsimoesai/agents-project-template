@@ -14,8 +14,8 @@ export default function AdminPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4">
         <ShieldCheck size={48} className="text-muted-foreground" />
-        <p className="font-mono text-sm text-muted-foreground">acesso restrito a administradores</p>
-        <Button variant="outline" onClick={() => router.push("/assistants")}>voltar</Button>
+        <p className="font-mono text-sm text-muted-foreground">restricted to administrators</p>
+        <Button variant="outline" onClick={() => router.push("/assistants")}>go back</Button>
       </div>
     )
   }
@@ -25,7 +25,7 @@ export default function AdminPage() {
       <div className="flex items-center gap-2 mb-6">
         <ShieldCheck size={20} style={{ color: "#136ddd" }} />
         <h1 className="text-xl font-mono font-semibold" style={{ color: "#136ddd" }}>
-          admin / usuários
+          admin / users
         </h1>
       </div>
       <AdminUserTable />
