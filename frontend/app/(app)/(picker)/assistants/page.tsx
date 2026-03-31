@@ -7,6 +7,16 @@ import { Bot, Pencil, Trash2, Plus } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAssistants, useDeleteAssistant } from "@/lib/hooks/useAssistants"
 import { AssistantForm } from "@/components/assistants/AssistantForm"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog"
 import type { AssistantRead } from "@/lib/types"
 
 export default function AssistantPickerPage() {
@@ -15,6 +25,7 @@ export default function AssistantPickerPage() {
   const deleteAssistant = useDeleteAssistant()
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<AssistantRead | undefined>(undefined)
+  const [deleteTarget, setDeleteTarget] = useState<AssistantRead | undefined>(undefined)
 
   function openCreate() {
     setEditTarget(undefined)
@@ -26,10 +37,12 @@ export default function AssistantPickerPage() {
     setFormOpen(true)
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete() {
+    if (!deleteTarget) return
     try {
-      await deleteAssistant.mutateAsync(id)
+      await deleteAssistant.mutateAsync(deleteTarget.assistant_id)
       toast.success("Assistant deleted")
+      setDeleteTarget(undefined)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete assistant")
     }
@@ -88,10 +101,7 @@ export default function AssistantPickerPage() {
                   <button
                     type="button"
                     aria-label="Delete assistant"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (window.confirm(`Delete "${a.name}"?`)) handleDelete(a.assistant_id)
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(a) }}
                     className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 size={11} />
@@ -137,6 +147,30 @@ export default function AssistantPickerPage() {
         onClose={() => setFormOpen(false)}
         assistant={editTarget}
       />
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined) }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete assistant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &ldquo;{deleteTarget?.name}&rdquo;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteAssistant.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteAssistant.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
