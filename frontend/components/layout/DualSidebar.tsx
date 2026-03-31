@@ -49,9 +49,9 @@ export function DualSidebar() {
   }
 
   return (
-    <div className="flex h-full shrink-0">
-      {/* Icon rail — 44px */}
-      <TooltipProvider delay={300}>
+    <TooltipProvider delay={300}>
+      <div className="flex h-full shrink-0">
+        {/* Icon rail — 44px */}
         <div className="w-11 shrink-0 border-r border-border/60 bg-sidebar flex flex-col items-center py-2 gap-1">
           {/* App logo */}
           <div className="w-7 h-7 rounded-md bg-[#136ddd] flex items-center justify-center mb-2 shrink-0">
@@ -94,75 +94,75 @@ export function DualSidebar() {
             danger
           />
         </div>
-      </TooltipProvider>
 
-      {/* Wide panel — 180px */}
-      <div className="w-[180px] shrink-0 border-r border-border/60 bg-sidebar flex flex-col h-full">
-        {/* Assistant name + description */}
-        <div className="px-3 pt-3 pb-2 border-b border-border/40">
-          <p className="text-sm font-semibold text-foreground truncate">
-            {assistant?.name ?? ""}
-          </p>
-          {assistant?.description && (
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
-              {assistant.description}
+        {/* Wide panel — 180px */}
+        <div className="w-[180px] shrink-0 border-r border-border/60 bg-sidebar flex flex-col h-full">
+          {/* Assistant name + description */}
+          <div className="px-3 pt-3 pb-2 border-b border-border/40">
+            <p className="text-sm font-semibold text-foreground truncate">
+              {assistant?.name ?? ""}
             </p>
-          )}
-        </div>
+            {assistant?.description && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                {assistant.description}
+              </p>
+            )}
+          </div>
 
-        {/* Thread list */}
-        <div className="flex-1 overflow-y-auto py-2 px-2">
-          <p className="px-2 py-1 text-[9px] font-mono uppercase tracking-[0.2em] text-muted-foreground/40 select-none">
-            Conversations
-          </p>
-          {threads?.length === 0 && (
-            <p className="px-2 py-3 text-xs text-muted-foreground/40 font-mono text-center">
-              No conversations yet.
+          {/* Thread list */}
+          <div className="flex-1 overflow-y-auto py-2 px-2">
+            <p className="px-2 py-1 text-[9px] font-mono uppercase tracking-[0.2em] text-muted-foreground/40 select-none">
+              Conversations
             </p>
-          )}
-          {threads?.map((t) => (
-            <button
-              key={t.thread_id}
-              type="button"
-              onClick={() =>
-                router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)
-              }
-              className={cn(
-                "w-full text-left flex items-center gap-2 px-2 py-2 rounded-md text-xs transition-colors",
-                threadId === t.thread_id
-                  ? "bg-[#136ddd]/10 text-[#c0d8ff]"
-                  : "text-muted-foreground/70 hover:bg-accent hover:text-foreground"
-              )}
-            >
-              <div
+            {threads?.length === 0 && (
+              <p className="px-2 py-3 text-xs text-muted-foreground/40 font-mono text-center">
+                No conversations yet.
+              </p>
+            )}
+            {threads?.map((t) => (
+              <button
+                key={t.thread_id}
+                type="button"
+                onClick={() =>
+                  router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)
+                }
                 className={cn(
-                  "w-1.5 h-1.5 rounded-full shrink-0",
+                  "w-full text-left flex items-center gap-2 px-2 py-2 rounded-md text-xs transition-colors",
                   threadId === t.thread_id
-                    ? "bg-[#136ddd]"
-                    : "bg-muted-foreground/25"
+                    ? "bg-[#136ddd]/10 text-[#c0d8ff]"
+                    : "text-muted-foreground/70 hover:bg-accent hover:text-foreground"
                 )}
-              />
-              <span className="truncate font-mono">
-                {t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
-              </span>
-            </button>
-          ))}
-        </div>
+              >
+                <div
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full shrink-0",
+                    threadId === t.thread_id
+                      ? "bg-[#136ddd]"
+                      : "bg-muted-foreground/25"
+                  )}
+                />
+                <span className="truncate font-mono">
+                  {t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
+                </span>
+              </button>
+            ))}
+          </div>
 
-        {/* New conversation */}
-        <div className="p-2 border-t border-border/40">
-          <button
-            type="button"
-            onClick={handleNewThread}
-            disabled={createThread.isPending}
-            className="w-full flex items-center gap-2 px-2 py-2 border border-dashed border-border/40 rounded-md text-xs text-muted-foreground/50 hover:text-foreground hover:border-[#136ddd]/40 hover:bg-[#136ddd]/5 transition-colors disabled:opacity-40"
-          >
-            <Plus size={12} />
-            <span>New conversation</span>
-          </button>
+          {/* New conversation */}
+          <div className="p-2 border-t border-border/40">
+            <button
+              type="button"
+              onClick={handleNewThread}
+              disabled={createThread.isPending}
+              className="w-full flex items-center gap-2 px-2 py-2 border border-dashed border-border/40 rounded-md text-xs text-muted-foreground/50 hover:text-foreground hover:border-[#136ddd]/40 hover:bg-[#136ddd]/5 transition-colors disabled:opacity-40"
+            >
+              <Plus size={12} />
+              <span>New conversation</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }
 
