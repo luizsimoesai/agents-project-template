@@ -1,5 +1,5 @@
 import { describe, it, expectTypeOf } from "vitest"
-import type { UserRead, AssistantRead, ThreadRead, MessageRead } from "./types"
+import type { UserRead, AssistantRead, ThreadRead } from "./types"
 
 describe("types", () => {
   it("UserRead has required fields", () => {

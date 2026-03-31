@@ -116,7 +116,7 @@ export function DualSidebar() {
                       )}
                     />
                     <span className="truncate font-mono">
-                      {t.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
+                      {t.metadata?.thread_name ?? `${t.thread_id.slice(0, 8)}…`}
                     </span>
                   </button>
                   <button
