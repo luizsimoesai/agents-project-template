@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider } from "@/components/providers/ThemeProvider"
 import { Toaster } from "sonner"
 import { QueryProvider } from "@/components/providers/QueryProvider"
 import { AuthProvider } from "@/components/providers/AuthProvider"
@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" className={`dark ${inter.variable}`}>
       <body className="antialiased" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
               {children}

@@ -1,14 +1,16 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { useAssistants } from "@/lib/hooks/useAssistants"
 import { ChatView } from "@/components/chat/ChatView"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ChatPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const assistantId = params.id as string
   const threadId = params.threadId as string
+  const initialMessage = searchParams.get("msg") ?? undefined
 
   const { data: assistants, isLoading } = useAssistants()
   const assistant = assistants?.find((a) => a.assistant_id === assistantId)
@@ -30,5 +32,5 @@ export default function ChatPage() {
     )
   }
 
-  return <ChatView threadId={threadId} assistant={assistant} />
+  return <ChatView threadId={threadId} assistant={assistant} initialMessage={initialMessage} />
 }

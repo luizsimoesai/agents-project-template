@@ -2,7 +2,7 @@ import asyncio
 import threading
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -10,6 +10,43 @@ from alembic import context
 
 from src.core.settings import settings
 from src.models.user import table_registry
+
+
+def _ensure_aegra_tables() -> None:
+    """Create Aegra's internal tables if they do not exist.
+
+    Aegra's migration resolver picks up the project's alembic.ini first,
+    so its own migration scripts (assistant, runs, threads, etc.) are never
+    applied on a fresh database. Using create_all(checkfirst=True) ensures
+    those tables are present before the project's migrations run, without
+    interfering with Alembic's version tracking.
+
+    Limitation: this handles missing *tables* (fresh DB). If a future Aegra
+    upgrade adds *columns* to existing tables, a `docker compose down -v` is
+    needed in development (or a manual ALTER TABLE in production) until Aegra
+    fixes the upstream bug in its migration resolver.
+    """
+    try:
+        from aegra_api.core.orm import Base as _AegraBase
+        from aegra_api.settings import settings as _aegra_settings
+    except ImportError:
+        return
+
+    from sqlalchemy.ext.asyncio import create_async_engine
+
+    async def _create() -> None:
+        _engine = create_async_engine(_aegra_settings.db.database_url)
+        try:
+            async with _engine.begin() as _conn:
+                await _conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+                await _conn.run_sync(_AegraBase.metadata.create_all, checkfirst=True)
+        finally:
+            await _engine.dispose()
+
+    asyncio.run(_create())
+
+
+_ensure_aegra_tables()
 
 config = context.config
 

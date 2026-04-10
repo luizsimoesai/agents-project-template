@@ -449,464 +449,9 @@ curl -X DELETE http://localhost:2026/api/v1/users/<UUID> \
 
 ----
 
-# 27/03/2026 — Parte 3
-
-CRUD de Assistentes: endpoints para criar, listar, buscar, atualizar e deletar assistentes LangGraph, integrados à tabela `assistant` gerenciada pelo Aegra.
-
----
-
-## O que é um "assistente" no contexto do Aegra?
-
-Antes de entrar no código, é importante entender o conceito.
-
-O Aegra usa o conceito de **assistente** para representar uma instância configurada de um grafo LangGraph. Pense assim:
-
-- O **grafo** (`src/agent/graph.py`) é o "motor" — define a lógica do agente (o loop ReAct).
-- O **assistente** é uma configuração salva desse motor para um usuário específico.
-
-Cada assistente guarda três campos de configuração:
-
-| Campo | O que é | Exemplo |
-|-------|---------|---------|
-| `config` | Configuração de baixo nível do LangGraph (ex: limites de recursão) | `{"recursion_limit": 10}` |
-| `context` | Parâmetros lidos pelo `src/agent/context.py` em cada execução | `{"model": "anthropic/claude-sonnet-4-6", "system_prompt": "Você é..."}` |
-| `metadata` | Dados livres para busca e filtro | `{"language": "pt-BR", "project": "suporte"}` |
-
-Isso significa que cada usuário pode ter múltiplos assistentes apontando para o mesmo grafo, mas com comportamentos diferentes — um para suporte em português, outro com um prompt diferente para análise de dados, etc.
-
----
-
-## Por que não criamos um modelo ORM nem uma migration?
-
-A tabela `assistant` **pertence ao Aegra** — ela foi criada pelas migrations internas do framework quando você rodou `aegra dev` pela primeira vez. Mexer nela diretamente seria contornar a gestão do Aegra, o que quebraria o versionamento automático, o `CASCADE DELETE` e outras funcionalidades.
-
-A solução foi **envolver** (`wrap`) o `AssistantService` que o próprio Aegra já oferece:
-
-```
-Nossa rota → Nosso AssistantService (wrapper) → AssistantService do Aegra → Banco
-```
-
-Esse padrão mantém o Aegra no controle da tabela e nos dá um ponto limpo para adaptar os schemas.
-
----
-
-## Arquivos criados
-
-```
-src/
-├── schemas/
-│   └── assistant.py          ← AssistantCreate, AssistantRead, AssistantUpdate
-├── services/
-│   └── assistant_service.py  ← wrapper sobre o AssistantService do Aegra
-└── api/
-    └── routes/
-        └── assistants.py     ← endpoints CRUD
-```
-
-`src/main.py` foi atualizado para registrar o novo router.
-
----
-
-## Passo a passo: como foi construído
-
-### Passo 1 — Entender o que o Aegra já oferece
-
-Antes de escrever qualquer código, inspecionamos o `AssistantService` interno do Aegra (em `.venv/lib/python3.12/site-packages/aegra_api/`). Descobrimos:
-
-- O construtor precisa de `AsyncSession` **e** `LangGraphService` (para validar o `graph_id`).
-- O Aegra já expõe uma função `get_assistant_service` como dependência FastAPI — pronta para ser usada com `Depends()`.
-- Todos os métodos recebem `user_identity: str` e filtram automaticamente os resultados pelo dono — ou seja, um usuário **nunca vê** os assistentes de outro.
-- O campo `metadata` no Python é exposto com o alias `metadata_dict` (para não conflitar com atributos internos do Pydantic).
-
-### Passo 2 — Schemas (`src/schemas/assistant.py`)
-
-Criamos três schemas Pydantic que servem como "contrato" da nossa API — o que aceitamos e o que retornamos — independentemente do que o Aegra usa internamente.
-
-**`AssistantCreate`** — body do POST:
-```python
-class AssistantCreate(BaseModel):
-    name: str
-    description: str | None = None
-    graph_id: str = "agent"      # padrão: único grafo do projeto
-    config: dict[str, Any] = {}
-    context: dict[str, Any] = {}
-    metadata: dict[str, Any] = {}
-```
-
-**`AssistantRead`** — o que a API retorna. Note que `user_id` foi **omitido** propositalmente: o cliente já sabe quem é pelo token, e expor o `user_id` seria informação redundante e potencialmente sensível.
-
-**`AssistantUpdate`** — todos os campos opcionais (PATCH semântico).
-
-### Passo 3 — Service wrapper (`src/services/assistant_service.py`)
-
-Este é o ponto central da implementação. O `AssistantService` não fala com o banco diretamente — ele delega para o Aegra e cuida da tradução de schemas.
-
-```python
-from aegra_api.services.assistant_service import (
-    AssistantService as AegraService,
-    get_assistant_service as get_aegra_service,
-)
-
-class AssistantService:
-    def __init__(self, _svc: AegraService) -> None:
-        self._svc = _svc
-```
-
-O padrão de **composição** (guardar o serviço do Aegra como `self._svc`) é preferível a herança aqui porque não queremos expor todos os métodos internos do Aegra — só os que fazem sentido para a nossa API.
-
-**Conversão de resposta** — o único ponto não trivial é o campo `metadata`:
-
-```python
-def _to_read(a: AegraAssistant) -> AssistantRead:
-    return AssistantRead(
-        ...
-        metadata=a.metadata_dict,  # alias do Aegra para evitar conflito com Pydantic
-        ...
-    )
-```
-
-**Factory de dependência** — seguindo o padrão do projeto:
-
-```python
-def get_assistant_service(
-    _svc: AegraService = Depends(get_aegra_service),
-) -> AssistantService:
-    return AssistantService(_svc)
-```
-
-O FastAPI resolve `get_aegra_service` automaticamente (que por sua vez resolve `get_session` e `get_langgraph_service`). Nossa factory só precisa envolver o resultado.
-
-### Passo 4 — Router (`src/api/routes/assistants.py`)
-
-O padrão é idêntico ao `users.py`: proteção JWT no router inteiro e `current_user` injetado em cada handler para extrair o `user_id`.
-
-```python
-router = APIRouter(
-    prefix="/assistants",
-    tags=["assistants"],
-    dependencies=[Depends(get_current_user)],  # JWT em todos os endpoints
-)
-```
-
-A diferença do `users.py` é que aqui o `assistant_id` no path é `str` (não `uuid.UUID`), porque o Aegra armazena os IDs como `TEXT` no banco:
-
-```python
-@router.get("/{assistant_id}", response_model=AssistantRead)
-async def get_assistant(
-    assistant_id: str,   # ← str, não uuid.UUID
-    ...
-```
-
-### Passo 5 — Registrar o router (`src/main.py`)
-
-```python
-from src.api.routes.assistants import router as assistants_router
-
-app.include_router(assistants_router, prefix="/api/v1")
-# → Endpoints ficam em /api/v1/assistants/...
-```
-
----
-
-## Endpoints disponíveis
-
-| Método | Path | Status | O que faz |
-|--------|------|--------|-----------|
-| POST | `/api/v1/assistants` | 201 | Cria um assistente |
-| GET | `/api/v1/assistants` | 200 | Lista os assistentes do usuário |
-| GET | `/api/v1/assistants/{id}` | 200 | Busca um assistente pelo ID |
-| PATCH | `/api/v1/assistants/{id}` | 200 | Atualiza parcialmente (Aegra incrementa a versão) |
-| DELETE | `/api/v1/assistants/{id}` | 204 | Remove o assistente e todos os seus runs/versões |
-
-Todos os endpoints exigem autenticação JWT. Cada usuário só vê e gerencia os seus próprios assistentes.
-
----
-
-## Como testar
-
-```bash
-# 1. Criar um assistente simples
-curl -X POST http://localhost:2026/api/v1/assistants \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Meu Assistente"}'
-
-# 2. Criar com contexto customizado (muda o comportamento do agente)
-curl -X POST http://localhost:2026/api/v1/assistants \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Assistente PT",
-    "context": {
-      "system_prompt": "Você é um assistente prestativo que responde sempre em português.",
-      "model": "anthropic/claude-sonnet-4-6"
-    }
-  }'
-
-# 3. Listar assistentes
-curl http://localhost:2026/api/v1/assistants \
-  -H "Authorization: Bearer <TOKEN>"
-
-# 4. Atualizar (Aegra incrementa version automaticamente)
-curl -X PATCH http://localhost:2026/api/v1/assistants/<ASSISTANT_ID> \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"description": "Assistente para conversas em português"}'
-
-# 5. Deletar (remove o assistente, seus runs e suas versões)
-curl -X DELETE http://localhost:2026/api/v1/assistants/<ASSISTANT_ID> \
-  -H "Authorization: Bearer <TOKEN>"
-```
-
-
-----
-
-# 27/03/2026 — Parte 4
-
-Chat com Assistentes: threads de conversa e execução do grafo LangGraph com memória persistente.
-
----
-
-## O que é uma Thread?
-
-Antes de entrar no código, é fundamental entender o modelo de conversas do LangGraph.
-
-Uma **thread** é uma sessão de conversa. Pense nela como um "fio" que conecta todas as mensagens trocadas com o agente:
-
-```
-Thread
- ├─ Mensagem 1: "Olá!"          → AI: "Olá! Como posso ajudar?"
- ├─ Mensagem 2: "Quanto é 2+2?" → AI: "4."
- └─ Mensagem 3: "E o dobro?"    → AI: "8."   ← agente lembra do contexto anterior
-```
-
-O histórico **não fica na tabela `thread`** — ele fica no **checkpointer** do LangGraph, que armazena snapshots do estado do grafo no PostgreSQL. A tabela `thread` é apenas um registro de metadados (quem criou, qual assistente, status).
-
-Cada thread está vinculada a um assistente. Isso significa que as configurações do assistente (`model`, `system_prompt`, etc.) são aplicadas em todas as mensagens dessa conversa.
-
----
-
-## Arquivos criados
-
-```
-src/
-├── schemas/
-│   └── thread.py         ← ThreadCreate, ThreadRead, ChatRequest, ChatResponse, MessageRead
-├── services/
-│   └── thread_service.py ← CRUD de threads + execução do grafo + leitura de histórico
-└── api/
-    └── routes/
-        └── threads.py    ← endpoints de threads e chat
-```
-
-`src/main.py` foi atualizado para registrar o novo router.
-
----
-
-## Passo a passo: como foi construído
-
-### Passo 1 — Entender a tabela `thread` do Aegra
-
-A tabela `thread` no banco tem esta estrutura:
-
-| Coluna | Tipo | Notas |
-|--------|------|-------|
-| `thread_id` | TEXT PK | UUID gerado pela nossa aplicação |
-| `status` | TEXT | `idle \| busy \| interrupted \| error` |
-| `metadata_json` | JSONB | Dados livres — guardamos `assistant_id`, `thread_name` aqui |
-| `user_id` | TEXT | Dono da thread |
-| `created_at` | TIMESTAMP | Auto |
-| `updated_at` | TIMESTAMP | Auto |
-
-O `assistant_id` não tem uma coluna dedicada — o Aegra guarda dados adicionais em `metadata_json`. Por isso, quando lemos uma thread, extraímos o `assistant_id` de `metadata_json.get("assistant_id")`.
-
-### Passo 2 — Schemas (`src/schemas/thread.py`)
-
-Cinco schemas definem o contrato da API:
-
-- **`ThreadCreate`** — body do POST para criar uma thread. Requer apenas `assistant_id`.
-- **`ThreadRead`** — resposta da API. Extrai `assistant_id` e `thread_name` do `metadata_json` para simplificar o acesso do cliente.
-- **`ChatRequest`** — body do POST `/chat`. Apenas a mensagem em texto puro.
-- **`ChatResponse`** — resposta do agente com `thread_id` e `message`.
-- **`MessageRead`** — uma entrada no histórico, com `role` ("human" ou "ai") e `content`.
-
-### Passo 3 — Service (`src/services/thread_service.py`)
-
-Este é o arquivo mais importante. O `ThreadService` tem **duas dependências**, não uma:
-
-```python
-class ThreadService:
-    def __init__(self, session: AsyncSession, langgraph_service: LangGraphService):
-        self.session = session
-        self._lg = langgraph_service
-```
-
-- **`session`** — para CRUD direto na tabela `thread` (mesmo padrão do `UserService`)
-- **`langgraph_service`** — para executar o grafo e ler o histórico do checkpointer
-
-**Por que duas dependências?** Porque as responsabilidades são diferentes:
-- Criar/listar/deletar uma thread → banco de dados via SQLAlchemy
-- Conversar / ler histórico → LangGraph via checkpointer
-
----
-
-**Criação de thread:**
-
-```python
-thread = AegraThread(
-    thread_id=str(uuid.uuid4()),   # geramos o UUID aqui (não tem server_default)
-    status="idle",
-    metadata_json={
-        "assistant_id": data.assistant_id,
-        "graph_id": "agent",
-        "owner": user_id,
-        "thread_name": data.thread_name,
-    },
-    user_id=user_id,
-)
-```
-
-Geramos o `thread_id` manualmente porque a tabela do Aegra não tem `server_default` para esse campo (diferente da tabela `users` que usa `uuid_generate_v4()`).
-
----
-
-**Execução do chat:**
-
-Este é o coração da implementação. O método `chat()` faz:
-
-```python
-# 1. Montar o config do LangGraph
-config = {"configurable": {"thread_id": thread_id}}
-
-# 2. Chamar o grafo passando o contexto do assistente via kwarg context=
-result = await graph.ainvoke(
-    {"messages": [HumanMessage(content=message)]},
-    config,
-    context=assistant.context or {},   # model, system_prompt do assistente
-)
-
-# 2. Obter uma instância do grafo com o checkpointer injetado
-async with self._lg.get_graph("agent", config=config, access_context="threads.create_run") as graph:
-
-    # 3. Invocar o grafo com a mensagem do usuário
-    result = await graph.ainvoke(
-        {"messages": [HumanMessage(content=message)]},
-        config,
-    )
-
-# 4. Extrair a última mensagem (resposta do agente)
-last = result["messages"][-1]
-```
-
-**Por que `async with`?** O `get_graph()` é um context manager assíncrono — ao entrar no bloco, o Aegra injeta o checkpointer PostgreSQL no grafo. Isso garante que cada requisição receba uma instância isolada do grafo com acesso à persistência.
-
-**Por que `thread_id` no configurable?** O checkpointer do LangGraph usa o `thread_id` como chave para identificar qual histórico de conversa deve ser carregado. Sem ele, o agente não teria memória entre chamadas.
-
-**Por que `context=assistant.context`?** O grafo define `context_schema=Context` e recebe o contexto de runtime via o mecanismo `Runtime[T]` do LangGraph. Esse mecanismo é alimentado pelo kwarg `context=` do `ainvoke`/`astream` — não pelo `configurable`. Espalhar os campos de contexto diretamente em `configurable` não popula o `Runtime[T]` e os valores seriam ignorados pelo nó `call_model`.
-
----
-
-**Leitura do histórico:**
-
-```python
-async with self._lg.get_graph("agent", access_context="threads.read") as graph:
-    state = await graph.aget_state(config)
-
-messages = state.values.get("messages", [])
-```
-
-`aget_state()` lê o último checkpoint da thread — que contém o estado completo do grafo, incluindo todos os mensagens acumuladas. O `access_context="threads.read"` informa ao Aegra que estamos apenas lendo, não executando o grafo.
-
-### Passo 4 — Router (`src/api/routes/threads.py`)
-
-O endpoint `/chat` é o mais interessante porque precisa de **duas dependências de serviço**:
-
-```python
-@router.post("/{thread_id}/chat")
-async def chat(
-    thread_id: str,
-    body: ChatRequest,
-    current_user: UserRead = Depends(get_current_user),
-    thread_service: ThreadService = Depends(get_thread_service),
-    assistant_service: AssistantService = Depends(get_assistant_service),  # ← reutilizado!
-):
-    thread = await thread_service.get_thread(thread_id, str(current_user.id))
-    assistant = await assistant_service.get(thread.assistant_id, str(current_user.id))
-    return await thread_service.chat(thread_id, body.message, assistant, str(current_user.id))
-```
-
-O router busca o assistente vinculado à thread antes de chamar o service. Isso é intencional — o router orquestra a busca das dependências, e o service executa a lógica. A separação mantém o `ThreadService` agnóstico ao `AssistantService`.
-
-### Passo 5 — Registrar o router (`src/main.py`)
-
-```python
-from src.api.routes.threads import router as threads_router
-app.include_router(threads_router, prefix="/api/v1")
-# → Endpoints ficam em /api/v1/threads/...
-```
-
----
-
-## Endpoints disponíveis
-
-| Método | Path | Status | O que faz |
-|--------|------|--------|-----------|
-| POST | `/api/v1/threads` | 201 | Cria uma thread vinculada a um assistente |
-| GET | `/api/v1/threads` | 200 | Lista as threads do usuário |
-| GET | `/api/v1/threads/{id}` | 200 | Busca uma thread pelo ID |
-| DELETE | `/api/v1/threads/{id}` | 204 | Remove a thread e todo o histórico |
-| POST | `/api/v1/threads/{id}/chat` | 200 | Envia uma mensagem e aguarda a resposta (bloqueante) |
-| POST | `/api/v1/threads/{id}/chat/stream` | 200 | Envia uma mensagem e recebe tokens em streaming (SSE) |
-| GET | `/api/v1/threads/{id}/history` | 200 | Retorna o histórico completo da conversa |
-
----
-
-## Como testar
-
-```bash
-# 1. Criar um assistente com prompt personalizado
-curl -X POST http://localhost:2026/api/v1/assistants \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Assistente PT",
-    "context": {"system_prompt": "Você é um assistente que responde em português."}
-  }'
-
-# 2. Criar uma thread vinculada ao assistente
-curl -X POST http://localhost:2026/api/v1/threads \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"assistant_id": "<ASSISTANT_ID>", "thread_name": "Conversa 1"}'
-
-# 3. Enviar uma mensagem (bloqueante — aguarda a resposta completa)
-curl -X POST http://localhost:2026/api/v1/threads/<THREAD_ID>/chat \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Olá! Quanto é 2 + 2?"}'
-
-# 4. Continuar a conversa (o agente lembra do contexto)
-curl -X POST http://localhost:2026/api/v1/threads/<THREAD_ID>/chat \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "E o dobro desse resultado?"}'
-
-# 5. Ver o histórico completo da conversa
-curl http://localhost:2026/api/v1/threads/<THREAD_ID>/history \
-  -H "Authorization: Bearer <TOKEN>"
-
-# 6. Deletar a thread (remove a thread e os runs via CASCADE)
-# Nota: o histórico de mensagens (checkpoints LangGraph) permanece no banco —
-# esse é o comportamento documentado do Aegra: checkpoints são mantidos separadamente.
-curl -X DELETE http://localhost:2026/api/v1/threads/<THREAD_ID> \
-  -H "Authorization: Bearer <TOKEN>"
-```
-
----
-
 # 27/03/2026 — Parte 5
 
-Streaming de respostas (SSE) e autenticação JWT unificada com o Aegra.
+Autenticação JWT unificada com o Aegra.
 
 ---
 
@@ -1004,138 +549,12 @@ O Aegra gerencia CORS centralmente no `aegra.json` — não é necessário adici
 - `allow_credentials: true` — obrigatório para que o browser envie o header `Authorization: Bearer <token>` em requisições cross-origin.
 - `allow_methods` e `allow_headers: ["*"]` — permitem todos os métodos e headers, o que é adequado para desenvolvimento. Em produção, pode-se restringir a `["GET", "POST", "PATCH", "DELETE"]` e `["Authorization", "Content-Type"]`.
 
-### Atenção: SSE com autenticação não funciona com `EventSource`
-
-O `EventSource` nativo do browser não suporta headers customizados — ele não consegue enviar o `Authorization: Bearer`. Para consumir o endpoint de streaming autenticado, o frontend deve usar `fetch()` com `ReadableStream`:
-
-```typescript
-// ✅ Correto — fetch suporta headers customizados
-const res = await fetch(`/api/v1/threads/${threadId}/chat/stream`, {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${token}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ message }),
-});
-
-const reader = res.body!.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-  const chunk = decoder.decode(value);
-  // parsear eventos SSE: linhas "event: ..." e "data: ..."
-}
-
-// ❌ Errado para endpoints autenticados
-const es = new EventSource(`/api/v1/threads/${threadId}/chat/stream`);
-// não há como passar o token JWT
-```
-
----
-
-## Passo 3 — Endpoint de streaming (`src/api/routes/threads.py`)
-
-O streaming usa o mesmo `StreamingResponse` do FastAPI, envolvendo o gerador assíncrono `stream_chat()` que já estava implementado no `ThreadService`.
-
-```python
-from fastapi.responses import StreamingResponse
-
-@router.post("/{thread_id}/chat/stream")
-async def stream_chat(thread_id, body, current_user, thread_service, assistant_service):
-    thread = await thread_service.get_thread(thread_id, str(current_user.id))
-    assistant = await assistant_service.get(thread.assistant_id, str(current_user.id))
-    return StreamingResponse(
-        thread_service.stream_chat(thread_id, body.message, assistant, user_id=str(current_user.id)),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-```
-
-Os headers `Cache-Control: no-cache` e `X-Accel-Buffering: no` são essenciais para que proxies (nginx, Cloudflare) não tentem armazenar o stream em buffer antes de enviá-lo ao cliente.
-
----
-
-## Como funciona o streaming internamente
-
-O método `stream_chat()` no `ThreadService` usa `graph.astream()` com `stream_mode=["messages"]`. O LangGraph emite tuplas `(mode, chunk)` onde o chunk pode ser:
-
-- `BaseMessageChunk` — um fragmento de token (ex: `"Ol"`, `"á"`, `" mundo"`)
-- `BaseMessage` — uma mensagem completa (ex: `ToolMessage` após executar uma ferramenta)
-
-Cada chunk é formatado como um evento SSE pelo `format_sse_message()` do Aegra:
-
-```
-event: metadata
-data: {"run_id": "...", "attempt": 1}
-
-event: messages/metadata
-data: {"<msg_id>": {"metadata": {...}}}
-
-event: messages/partial
-data: [{"type": "AIMessageChunk", "content": "Ol", ...}]
-
-event: messages/partial
-data: [{"type": "AIMessageChunk", "content": "á!", ...}]
-
-event: messages/complete
-data: [{"type": "AIMessage", "content": "Olá!", ...}]
-
-event: end
-data: {"status": "success"}
-```
-
-Este é exatamente o mesmo protocolo que o Aegra usa nos seus endpoints nativos, o que significa que clientes que já consomem o streaming do Aegra funcionarão com nosso endpoint sem alterações.
-
----
-
-## Como testar o streaming
-
-```bash
-# Streaming com curl (exibe os eventos SSE no terminal)
-curl -N -X POST http://localhost:2026/api/v1/threads/<THREAD_ID>/chat/stream \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Conte uma história curta."}'
-```
-
-A flag `-N` desativa o buffer do curl, mostrando cada evento SSE assim que chega.
-
-Exemplo de saída esperada:
-```
-event: metadata
-data: {"run_id": "abc123", "attempt": 1}
-
-event: messages/metadata
-data: {"msg_001": {"metadata": {"langgraph_node": "call_model"}}}
-
-event: messages/partial
-data: [{"type": "AIMessageChunk", "content": "Era"}]
-
-event: messages/partial
-data: [{"type": "AIMessageChunk", "content": " uma vez"}]
-
-...
-
-event: messages/complete
-data: [{"type": "AIMessage", "content": "Era uma vez..."}]
-
-event: end
-data: {"status": "success"}
-```
-
----
-
 ## Resumo das mudanças
 
 | Arquivo | O que mudou |
 |---------|-------------|
 | `src/auth/jwt.py` | Novo — handler `@auth.authenticate` que valida nossos JWTs |
 | `aegra.json` | Seção `"auth"` com o handler JWT + seção `"http.cors"` para o frontend |
-| `src/api/routes/threads.py` | Novo endpoint `POST /{id}/chat/stream` com `StreamingResponse` |
-
 
 ----
 
@@ -1156,49 +575,7 @@ if user is None:
     raise HTTPException(status_code=404, detail="User not found")
 ```
 
-Esse padrão já existia no `ThreadService` como `_fetch`. Extraímos um helper privado `_fetch_user` que centraliza a lógica — qualquer alteração na mensagem de erro ou no status code agora exige um único edit.
-
-### `src/services/thread_service.py` — constante e helper
-
-Dois problemas corrigidos:
-
-1. **Magic string `"agent"`** — aparecia em dois lugares (`create_thread` e `get_history`). Agora há uma constante de módulo:
-
-   ```python
-   _DEFAULT_GRAPH_ID = "agent"
-   ```
-
-2. **Extração de conteúdo duplicada** — a linha `content = msg.content if isinstance(msg.content, str) else str(msg.content)` repetia em `chat` e `get_history`. Extraído como:
-
-   ```python
-   def _extract_content(msg: object) -> str:
-       content = getattr(msg, "content", "")
-       return content if isinstance(content, str) else str(content)
-   ```
-
-### `src/services/thread_service.py` — remoção de query redundante em `chat` e `stream_chat`
-
-Os métodos `chat` e `stream_chat` chamavam `_fetch` internamente para verificar ownership da thread. Porém, o route handler que chama esses métodos já havia feito essa verificação via `get_thread` logo antes. Resultado: **duas queries idênticas** contra a tabela `thread` em toda requisição de chat.
-
-A verificação foi removida dos métodos internos e a responsabilidade de verificar ownership permanece no route handler (que já faz isso). O parâmetro `user_id` foi removido de `chat` e `stream_chat` já que não era mais usado:
-
-```python
-# antes
-return await thread_service.chat(thread_id, body.message, assistant, user_id=str(current_user.id))
-
-# depois
-return await thread_service.chat(thread_id, body.message, assistant)
-```
-
-### `src/schemas/thread.py` — `status` tipado com `Literal`
-
-O campo `status` de `ThreadRead` era `str`, com os valores válidos documentados apenas em um comentário. Substituído por:
-
-```python
-status: Literal["idle", "busy", "interrupted", "error"]
-```
-
-Isso fornece validação automática pelo Pydantic, documentação no schema OpenAPI e checagem de tipo estático.
+Extraímos um helper privado `_fetch_user` que centraliza a lógica — qualquer alteração na mensagem de erro ou no status code agora exige um único edit.
 
 ----
 
@@ -1216,10 +593,8 @@ backend/tests/
 ├── test_security.py         # create_access_token, decode_token, get_current_user, get_current_admin
 ├── test_user_service.py     # UserService — todos os métodos
 ├── test_auth_service.py     # AuthService — login e refresh
-├── test_thread_service.py   # ThreadService — CRUD, chat, stream_chat, get_history
 ├── test_auth_handler.py     # src.auth.jwt.authenticate (handler do Aegra)
-├── test_routes_auth.py      # rotas /api/v1/auth/* (integração com httpx)
-└── test_routes_threads.py   # rotas /api/v1/threads/* (integração com httpx)
+└── test_routes_auth.py      # rotas /api/v1/auth/* (integração com httpx)
 ```
 
 ### Como rodar
@@ -1231,9 +606,6 @@ uv run pytest tests/ -v --cov=src --cov-report=term-missing
 
 # Um arquivo específico
 uv run pytest tests/test_user_service.py -v
-
-# Um teste específico
-uv run pytest tests/test_thread_service.py::test_chat_passes_correct_config_and_context -v
 ```
 
 ### Cobertura atual
@@ -1242,13 +614,9 @@ uv run pytest tests/test_thread_service.py::test_chat_passes_correct_config_and_
 |--------|-----------|
 | `src/core/security.py` | 100% |
 | `src/api/routes/auth.py` | 100% |
-| `src/api/routes/threads.py` | 100% |
 | `src/services/user_service.py` | 98% |
 | `src/services/auth_service.py` | 97% |
-| `src/services/thread_service.py` | 97% |
 | `src/auth/jwt.py` | 95% |
-
-**79 testes, todos passando em ~0.6s.**
 
 ### Decisões de design
 
@@ -1256,5 +624,279 @@ uv run pytest tests/test_thread_service.py::test_chat_passes_correct_config_and_
 - **Rotas testadas com `httpx.AsyncClient`** e `app.dependency_overrides` — sem subir infraestrutura.
 - **bcrypt com `rounds=4`** no conftest para que os testes de senha rodem em milissegundos (produção usa `rounds=12`).
 - **`session.refresh.side_effect`** popula `created_at`/`updated_at` nos objetos ORM durante os testes, já que esses campos só têm `server_default` (o banco os preenche em produção).
-- **`stream_chat`** testado com async generators reais (`async def fake_astream`) em vez de `AsyncMock`, para respeitar o protocolo de iteração assíncrona.
+
+
+----
+
+# 06/04/2026 — Atualização Aegra v0.9.2
+
+Atualização da dependência `aegra-cli` de `>=0.8.3` para `>=0.9.2` e correção do `Dockerfile`.
+
+---
+
+## O que mudou no Aegra
+
+A v0.9.0 foi a principal mudança. Em resumo:
+
+**Workers com escala horizontal** — Em produção (`aegra up`), o Aegra agora executa os grafos em processos separados ("workers") que consomem tarefas de uma fila Redis. Isso permite rodar várias instâncias em paralelo. Em desenvolvimento (`aegra dev`), o comportamento é exatamente o mesmo de antes — sem Redis, sem configuração extra.
+
+**Heartbeat nos endpoints de espera** — Os endpoints `/runs/wait` e `/runs/join` agora enviam `\n` periódicos enquanto o agente processa, evitando que proxies (nginx, AWS ALB) encerrem a conexão por timeout. O resultado final continua sendo JSON normal — parsers padrão ignoram os `\n` automaticamente.
+
+**Variáveis de configuração novas** (todas opcionais, só necessárias se ativar Redis):
+
+| Variável | Padrão | O que faz |
+|----------|--------|-----------|
+| `REDIS_BROKER_ENABLED` | `false` | Ativa workers Redis em produção |
+| `WORKER_COUNT` | `3` | Número de workers por instância |
+| `N_JOBS_PER_WORKER` | `10` | Tarefas simultâneas por worker |
+| `BG_JOB_TIMEOUT_SECS` | `3600` | Tempo máximo de execução (segundos) |
+
+---
+
+## O que foi alterado neste projeto
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `pyproject.toml` | `aegra-cli>=0.8.3` → `>=0.9.2` |
+| `Dockerfile` | Adicionado `COPY src/ ./src/` no stage final — corrige falha de deploy em cloud |
+
+O `COPY src/` estava ausente do stage final do `Dockerfile`, o que fazia o deploy em cloud falhar silenciosamente (em desenvolvimento o `docker-compose` mascarava o problema com um volume mount). Esse bug foi corrigido no template oficial do Aegra na v0.9.0.
+
+### atualização em `.env.example`
+```bash
+# --- Aegra Workers (Redis) ---
+# Ative apenas em produção (aegra up). Em desenvolvimento (aegra dev) não é necessário.
+REDIS_BROKER_ENABLED=false
+# REDIS_URL=redis://localhost:6379
+# WORKER_COUNT=3              # workers por instância
+# N_JOBS_PER_WORKER=10        # tarefas simultâneas por worker
+# BG_JOB_TIMEOUT_SECS=3600   # tempo máximo de execução por run (segundos)
+```
+
+----
+
+# 06/04/2026 — Correção: tabelas internas do Aegra não eram criadas em banco novo
+
+## O problema
+
+Ao subir o banco do zero (`docker compose down -v && uv run aegra dev`), o servidor falhava com:
+
+```
+UndefinedTableError: relation "assistant" does not exist
+```
+
+As tabelas internas do Aegra (`assistant`, `thread`, `runs`, etc.) nunca eram criadas.
+
+## Por que acontece
+
+O Aegra tem seu próprio sistema de migrations Alembic, com scripts bundled no pacote instalado. Ao iniciar, ele chama `find_alembic_ini()` para localizar qual `alembic.ini` usar — e essa função verifica o diretório de trabalho **primeiro**:
+
+```python
+# aegra_api/core/migrations.py
+def find_alembic_ini() -> Path:
+    cwd_ini = Path("alembic.ini")
+    if cwd_ini.exists():
+        return cwd_ini.resolve()   # <-- encontra o nosso alembic.ini aqui
+    # ... bundled fallback nunca alcançado
+```
+
+Como o projeto tem seu próprio `alembic.ini` na raiz do `backend/`, o Aegra nunca chega ao fallback com os seus scripts internos. Resultado: as migrations do Aegra (que criam `assistant`, `thread`, `runs`, etc.) nunca rodam em banco novo.
+
+**Nota:** Isso não está documentado nem reportado como bug no repositório do Aegra. O template `aegra init` não cria `alembic.ini` — o Aegra foi projetado para projetos sem Alembic próprio. A adição do Alembic ao projeto (para gerenciar tabelas customizadas como `users`) é o que cria o conflito. A descoberta veio da leitura direta do código-fonte instalado em `.venv`.
+
+## A solução
+
+Em vez de rodar as migrations do Aegra (o que causaria conflitos na tabela `alembic_version`), usamos `SQLAlchemy.create_all(checkfirst=True)` para criar as tabelas do Aegra diretamente a partir dos seus modelos ORM.
+
+A função `_ensure_aegra_tables()` foi adicionada ao início de `migrations/env.py` e é chamada automaticamente a cada execução do Alembic:
+
+```python
+def _ensure_aegra_tables() -> None:
+    from aegra_api.core.orm import Base as _AegraBase
+    from aegra_api.settings import settings as _aegra_settings
+    from sqlalchemy.ext.asyncio import create_async_engine
+
+    async def _create() -> None:
+        _engine = create_async_engine(_aegra_settings.db.database_url)
+        async with _engine.begin() as _conn:
+            # uuid-ossp é necessário porque o modelo assistant usa
+            # uuid_generate_v4() como server_default
+            await _conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+            await _conn.run_sync(_AegraBase.metadata.create_all, checkfirst=True)
+        await _engine.dispose()
+
+    asyncio.run(_create())
+```
+
+**Por que `create_all` e não as migrations do Aegra?**
+
+Rodar as migrations do Aegra (com `alembic upgrade head`) gravaria a revisão final do Aegra na tabela `alembic_version`. Na próxima vez que o Alembic rodasse para as migrations do projeto, ele encontraria uma revisão desconhecida na tabela e falharia com `CommandError: Can't locate revision`.
+
+`create_all(checkfirst=True)` cria as tabelas sem tocar na `alembic_version`, então as duas bases de migrations coexistem sem conflito.
+
+**Por que o `uuid-ossp`?**
+
+O PostgreSQL 18 não habilita a extensão `uuid-ossp` por padrão. O modelo ORM do Aegra para a tabela `assistant` usa `public.uuid_generate_v4()::text` como `server_default` — função que só existe com essa extensão. Habilitamos a extensão antes do `create_all` para que a criação da tabela funcione. `IF NOT EXISTS` torna a operação idempotente.
+
+## Limitação conhecida
+
+`create_all(checkfirst=True)` só cria tabelas que ainda não existem. Se uma atualização futura do Aegra **adicionar colunas** a tabelas já existentes, o `create_all` não as adicionará. Nesse caso, é necessário:
+
+- Em desenvolvimento: `docker compose down -v` e subir novamente
+- Em produção: aguardar o Aegra corrigir o bug em `find_alembic_ini()` ou aplicar `ALTER TABLE` manualmente
+
+----
+
+# 10/04/2026 — Integração do BudgetMiddleware
+
+Migração do agente de `StateGraph` manual para `create_agent` com adição do middleware customizado `langchain-budget-middleware` para rastreamento de tokens e custo por thread.
+
+---
+
+## Motivação
+
+O agente original era construído manualmente com `StateGraph`, o que não permitia o uso de middlewares da API `create_agent` do LangChain. A migração foi necessária para integrar o `BudgetMiddleware`, que rastreia uso de tokens e custo em tempo real e emite eventos SSE consumidos pelo frontend.
+
+---
+
+## O que foi alterado
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/agent/graph.py` | Migração de `StateGraph` para `create_agent` + `@dynamic_prompt` + `BudgetMiddleware` |
+
+---
+
+## `src/agent/graph.py` — migração para `create_agent`
+
+### Antes
+
+O agente era um `StateGraph` com um nó `call_model` que invocava o modelo manualmente:
+
+```python
+async def call_model(state: State, runtime: Runtime[Context]) -> dict:
+    model = load_chat_model(runtime.context.model).bind_tools(TOOLS)
+    system_message = SystemMessage(
+        content=runtime.context.system_prompt.format(
+            system_time=datetime.now(tz=UTC).isoformat()
+        )
+    )
+    response = await model.ainvoke([system_message, *state.messages])
+    return {"messages": [response]}
+
+graph = (
+    StateGraph(State, input_schema=InputState, context_schema=Context)
+    .add_node("agent", call_model)
+    .add_node("tools", ToolNode(TOOLS))
+    ...
+    .compile(name="agent")
+)
+```
+
+### Depois
+
+O loop ReAct é gerado pelo `create_agent`. O system prompt e o budget passam a ser injetados via middleware:
+
+```python
+@dynamic_prompt
+def dynamic_system_prompt(request: ModelRequest) -> str:
+    return request.runtime.context.system_prompt.format(
+        system_time=datetime.now(tz=UTC).isoformat()
+    )
+
+graph = create_agent(
+    model=_model,
+    tools=TOOLS,
+    context_schema=Context,
+    middleware=[
+        dynamic_system_prompt,
+        BudgetMiddleware(
+            emit_updates=True,
+            scope="thread",
+            token_limit=5_000,
+            cost_limit=0.001,
+            pricing=_pricing,
+            warn_at=0.8,
+            on_limit="end",
+        ),
+    ],
+    name="agent",
+)
+```
+
+### `@dynamic_prompt`
+
+O decorator `@dynamic_prompt` da API de middlewares do LangChain substitui o system prompt antes de cada chamada ao modelo. Ele recebe um `ModelRequest` que expõe `request.runtime.context` — o mesmo `Context` dataclass do agente — e retorna uma `str` que vira o novo `SystemMessage`. Isso preserva o comportamento original de ler `runtime.context.system_prompt` e formatar com `{system_time}`.
+
+### `BudgetMiddleware`
+
+Instalado via `uv add --editable /Users/luizsimoes/projetos/budget-middleware` (pacote local em desenvolvimento). Configuração utilizada:
+
+| Parâmetro | Valor | Descrição |
+|-----------|-------|-----------|
+| `emit_updates` | `True` | Emite evento `budget_update` no stream após cada chamada |
+| `scope` | `"thread"` | Acumula tokens ao longo de toda a thread |
+| `token_limit` | `5_000` | Para o agente ao atingir 5k tokens |
+| `cost_limit` | `0.001` | Para ao atingir $0,001 por thread |
+| `pricing` | `TokenPricing(0.0008, 0.0024)` | Estimativa para modelo 120B OSS ($0,80/$2,40 por 1M tokens) |
+| `warn_at` | `0.8` | Emite aviso ao atingir 80% do limite |
+| `on_limit` | `"end"` | Encerra graciosamente (sem lançar exceção) |
+
+### Eventos `budget_update`
+
+A cada chamada ao modelo, o middleware emite um evento customizado no stream SSE:
+
+```json
+{
+  "type": "budget_update",
+  "tokens_input": 312,
+  "tokens_output": 87,
+  "tokens_total": 399,
+  "token_limit": 5000,
+  "token_percent": 0.0798,
+  "cost_usd": 0.000458,
+  "cost_limit": 0.001,
+  "cost_percent": 0.458,
+  "context_window_tokens": 399,
+  "context_window_size": null,
+  "warning_triggered": false,
+  "limit_reached": false
+}
+```
+
+O frontend consome esses eventos via `onCustomEvent` no `useStream` e exibe o componente `BudgetWidget` no canto superior direito do chat.
+
+---
+
+## Correção no `langchain-budget-middleware`
+
+Durante os testes, identificou-se um comportamento indesejado: quando o limite era atingido **durante** uma chamada ao modelo, a resposta gerada era descartada e substituída pela mensagem de limite — o texto sumia da tela.
+
+**Causa:** em `_process_call`, ao detectar que o acumulado ultrapassou o limite após a resposta, o middleware chamava `_handle_limit`, que descartava o `response` real e retornava uma mensagem artificial.
+
+**Correção aplicada no pacote `budget-middleware`:**
+
+`state.py` — novo campo para persistir o estado de limite na thread:
+```python
+budget_limit_reached: NotRequired[bool]
+```
+
+`middleware.py` — pré-check passa a ler a flag do state:
+```python
+already_reached = bool(state.get("budget_limit_reached") or False)
+if already_reached or self._is_limit_reached(tokens_input, tokens_output):
+    return self._handle_limit(...)
+```
+
+`middleware.py` — `_process_call` deixa a resposta atual passar e grava a flag para bloquear a próxima chamada:
+```python
+if limit_reached:
+    state_update["budget_limit_reached"] = True
+    return ExtendedModelResponse(
+        model_response=response,   # resposta preservada
+        command=Command(update=state_update),
+    )
+```
+
+**Resultado:** a resposta que cruza o limite é exibida por completo. Somente na próxima mensagem o agente retorna a mensagem de limite.
 

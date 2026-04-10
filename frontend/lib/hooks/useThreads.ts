@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { fetchThreads, createThread, deleteThread, fetchThreadState } from "@/lib/api/threads"
+import { fetchThreads, createThread, deleteThread, fetchThreadState, updateThreadMetadata } from "@/lib/api/threads"
 
 import type { ThreadCreate } from "@/lib/types"
 
@@ -24,6 +24,15 @@ export function useCreateThread() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: ThreadCreate) => createThread(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: THREADS_KEY }),
+  })
+}
+
+export function useUpdateThreadName() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      updateThreadMetadata(id, { thread_name: name }),
     onSuccess: () => qc.invalidateQueries({ queryKey: THREADS_KEY }),
   })
 }

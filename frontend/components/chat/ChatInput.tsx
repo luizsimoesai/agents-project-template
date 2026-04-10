@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Square, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -11,11 +11,17 @@ interface ChatInputProps {
   onStop: () => void
   isStreaming: boolean
   disabled?: boolean
+  centered?: boolean
 }
 
-export function ChatInput({ onSubmit, onStop, isStreaming, disabled }: ChatInputProps) {
+export function ChatInput({ onSubmit, onStop, isStreaming, disabled, centered }: ChatInputProps) {
   const [value, setValue] = useState("")
   const ref = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-focus on mount
+  useEffect(() => {
+    ref.current?.focus()
+  }, [])
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -33,7 +39,7 @@ export function ChatInput({ onSubmit, onStop, isStreaming, disabled }: ChatInput
   }
 
   return (
-    <div className="border-t border-border/60 px-4 py-3">
+    <div className={centered ? "w-full" : "border-t border-border/60 px-4 py-3"}>
       <div className="relative flex items-end gap-2 bg-card border border-border rounded-xl px-3 py-2 shadow-sm focus-within:border-[#2a9d8f]/50 focus-within:ring-2 focus-within:ring-[#2a9d8f]/10 transition-all">
         <Textarea
           ref={ref}

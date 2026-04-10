@@ -5,7 +5,7 @@ description = "backend"
 requires-python = ">=3.12"
 
 dependencies = [
-    "aegra-cli>=0.8.3",
+    "aegra-cli>=0.9.2",
     "langgraph>=1.0.8",
     "langchain>=0.3.14",
     "langchain-openai>=0.3.0",
@@ -19,6 +19,7 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.22",
     "email-validator>=2.3.0",
+    "langchain-budget-middleware",
 ]
 
 [build-system]
@@ -74,3 +75,6 @@ asyncio_mode = 'auto'
 [tool.coverage.run]
 core = "ctrace"
 concurrency = ["thread"]
+
+[tool.uv.sources]
+langchain-budget-middleware = { path = "../../budget-middleware", editable = true }

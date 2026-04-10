@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Bot, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/components/providers/ThemeProvider"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/lib/store/auth"
 import {
@@ -18,8 +18,6 @@ export function IconRail() {
   const router = useRouter()
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
   const { user, clearAuth } = useAuthStore()
   const queryClient = useQueryClient()
 
@@ -65,13 +63,11 @@ export function IconRail() {
           onClick={() => router.push("/profile")}
           active={pathname.startsWith("/profile")}
         />
-        {mounted && (
-          <RailButton
-            icon={theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            label={theme === "dark" ? "Light theme" : "Dark theme"}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          />
-        )}
+        <RailButton
+          icon={theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          label={theme === "dark" ? "Light theme" : "Dark theme"}
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        />
         <RailButton
           icon={<LogOut size={18} />}
           label="Logout"

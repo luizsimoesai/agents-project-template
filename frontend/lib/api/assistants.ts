@@ -16,7 +16,8 @@ export async function fetchAssistants(): Promise<AssistantRead[]> {
   const res = await apiClient("/assistants")
   if (!res.ok) return throwOnError(res, "Erro ao buscar assistentes")
   const data = await res.json()
-  return Array.isArray(data) ? data : (data.assistants ?? [])
+  const all: AssistantRead[] = Array.isArray(data) ? data : (data.assistants ?? [])
+  return all.filter((a) => a.metadata?.created_by !== "system")
 }
 
 export async function fetchAssistant(id: string): Promise<AssistantRead> {

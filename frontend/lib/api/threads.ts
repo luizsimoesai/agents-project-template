@@ -41,6 +41,18 @@ export async function createThread(data: ThreadCreate): Promise<ThreadRead> {
   return res.json()
 }
 
+export async function updateThreadMetadata(
+  id: string,
+  metadata: Record<string, unknown>
+): Promise<ThreadRead> {
+  const res = await apiClient(`/threads/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ metadata }),
+  })
+  if (!res.ok) return throwOnError(res, "Erro ao atualizar conversa")
+  return res.json()
+}
+
 export async function deleteThread(id: string): Promise<void> {
   const res = await apiClient(`/threads/${id}`, { method: "DELETE" })
   if (!res.ok) return throwOnError(res, "Erro ao apagar conversa")

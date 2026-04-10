@@ -121,37 +121,37 @@
 }
 
 .dark {
-  /* Deep ocean night — Charcoal Blue as base */
-  --background: oklch(0.14 0.028 220);     /* deep charcoal blue */
-  --foreground: oklch(0.92 0.018 75);      /* warm sandy cream */
+  /* Dark slate — medium-dark grays with a subtle cool tint */
+  --background: oklch(0.21 0.010 230);     /* dark slate gray */
+  --foreground: oklch(0.95 0.008 75);      /* near-white, slightly warm */
 
-  --card: oklch(0.18 0.026 215);
-  --card-foreground: oklch(0.92 0.018 75);
+  --card: oklch(0.24 0.010 225);
+  --card-foreground: oklch(0.95 0.008 75);
 
-  --popover: oklch(0.19 0.026 215);
-  --popover-foreground: oklch(0.92 0.018 75);
+  --popover: oklch(0.25 0.010 225);
+  --popover-foreground: oklch(0.95 0.008 75);
 
   /* Primary: brighter Verdigris for dark bg */
   --primary: oklch(0.66 0.110 185);
-  --primary-foreground: oklch(0.12 0.028 220);
+  --primary-foreground: oklch(0.15 0.020 220);
 
-  /* Secondary: muted charcoal */
-  --secondary: oklch(0.22 0.032 218);
-  --secondary-foreground: oklch(0.85 0.015 75);
+  /* Secondary: muted slate */
+  --secondary: oklch(0.28 0.012 225);
+  --secondary-foreground: oklch(0.90 0.010 75);
 
   /* Muted */
-  --muted: oklch(0.20 0.028 218);
-  --muted-foreground: oklch(0.60 0.025 185);
+  --muted: oklch(0.27 0.010 225);
+  --muted-foreground: oklch(0.72 0.014 200);
 
   /* Accent: Sandy Brown warm on dark */
   --accent: oklch(0.72 0.118 50);
-  --accent-foreground: oklch(0.12 0.028 220);
+  --accent-foreground: oklch(0.15 0.020 220);
 
   /* Destructive: Burnt Peach stays vivid */
   --destructive: oklch(0.66 0.155 35);
 
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.66 0.110 185 / 35%);
 
   /* Charts: palette on dark */
@@ -161,13 +161,13 @@
   --chart-4: oklch(0.66 0.155 35);         /* Burnt Peach */
   --chart-5: oklch(0.55 0.065 220);        /* Charcoal Blue muted */
 
-  --sidebar: oklch(0.11 0.026 220);
-  --sidebar-foreground: oklch(0.90 0.015 75);
+  --sidebar: oklch(0.18 0.010 230);
+  --sidebar-foreground: oklch(0.93 0.008 75);
   --sidebar-primary: oklch(0.66 0.110 185);
-  --sidebar-primary-foreground: oklch(0.12 0.028 220);
-  --sidebar-accent: oklch(0.19 0.028 218);
-  --sidebar-accent-foreground: oklch(0.88 0.015 75);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-primary-foreground: oklch(0.15 0.020 220);
+  --sidebar-accent: oklch(0.25 0.010 225);
+  --sidebar-accent-foreground: oklch(0.92 0.008 75);
+  --sidebar-border: oklch(1 0 0 / 9%);
   --sidebar-ring: oklch(0.66 0.110 185 / 35%);
 }
 
@@ -179,6 +179,34 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.70 0.020 200 / 40%) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: oklch(0.45 0.010 225 / 50%) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: oklch(0.70 0.020 200 / 40%);
+    border-radius: 9999px;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background-color: oklch(0.45 0.010 225 / 50%);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(0.58 0.098 185 / 60%);
   }
   html {
     @apply font-sans;
