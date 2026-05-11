@@ -1022,7 +1022,6 @@ version = "0.1.0"
 source = { editable = "../../budget-middleware" }
 dependencies = [
     { name = "langchain" },
-    { name = "langchain-ollama" },
     { name = "langgraph" },
 ]
 
@@ -1030,7 +1029,7 @@ dependencies = [
 requires-dist = [
     { name = "langchain", specifier = ">=1.0,<2.0" },
     { name = "langchain-anthropic", marker = "extra == 'examples'" },
-    { name = "langchain-ollama", specifier = ">=1.1.0" },
+    { name = "langchain-ollama", marker = "extra == 'examples'" },
     { name = "langchain-openai", marker = "extra == 'dev'" },
     { name = "langchain-openai", marker = "extra == 'examples'" },
     { name = "langgraph", specifier = ">=1.0,<2.0" },
