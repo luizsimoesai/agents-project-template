@@ -110,6 +110,39 @@ Modelos disponíveis seguem o formato `"provider/model"`, ex:
 
 ---
 
+## Registar um novo tipo de agente
+
+O template usa uma convenção de dois ficheiros para expor novos grafos ao utilizador final:
+
+**1. Registar o grafo no backend** (`backend/aegra.json`):
+
+```json
+{
+  "graphs": {
+    "agent":      "./src/agent/graph.py:graph",
+    "deep_agent": "./src/agent/deepagents/graph.py:graph",
+    "meu_agente": "./src/agent/meu_agente/graph.py:graph"
+  }
+}
+```
+
+**2. Adicionar a descrição no frontend** (`frontend/lib/graph-types.ts`):
+
+```ts
+export const GRAPH_TYPES: GraphType[] = [
+  // ... entradas existentes ...
+  {
+    graph_id: "meu_agente",
+    label: "Nome Amigável",
+    description: "Uma frase explicando o que este agente faz.",
+  },
+]
+```
+
+O select de criação de assistentes usa este array — ao adicionar uma entrada aqui, a opção aparece imediatamente para o utilizador final. Se um assistente existente tiver um `graph_id` não listado, o badge na lista mostra o `graph_id` cru como fallback.
+
+---
+
 ## Resetar o banco de dados
 
 ```bash

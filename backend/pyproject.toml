@@ -19,6 +19,7 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.22",
     "email-validator>=2.3.0",
+    "deepagents>=0.5.9",
 ]
 
 [build-system]

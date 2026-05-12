@@ -29,7 +29,7 @@ export async function fetchAssistant(id: string): Promise<AssistantRead> {
 export async function createAssistant(data: AssistantCreate): Promise<AssistantRead> {
   const res = await apiClient("/assistants", {
     method: "POST",
-    body: JSON.stringify({ graph_id: "agent", ...data }),
+    body: JSON.stringify(data),
   })
   if (!res.ok) return throwOnError(res, "Failed to create assistant")
   return res.json()

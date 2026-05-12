@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import type { AssistantRead } from "@/lib/types"
 import { useAuthStore } from "@/lib/store/auth"
+import { getGraphType } from "@/lib/graph-types"
 
 export default function AssistantPickerPage() {
   const router = useRouter()
@@ -83,7 +84,7 @@ export default function AssistantPickerPage() {
                   e.key === "Enter" &&
                   router.push(`/assistants/${a.assistant_id}/threads`)
                 }
-                className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-[10rem]"
+                className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-40"
               >
                 {/* Edit / delete — appear on hover */}
                 <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -121,6 +122,11 @@ export default function AssistantPickerPage() {
                     {a.description}
                   </p>
                 )}
+
+                {/* Graph type badge */}
+                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-accent text-muted-foreground">
+                  {getGraphType(a.graph_id)?.label ?? a.graph_id}
+                </span>
               </div>
             ))}
 
@@ -128,7 +134,7 @@ export default function AssistantPickerPage() {
             <button
               type="button"
               onClick={openCreate}
-              className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border/40 rounded-lg p-5 min-h-[10rem] hover:border-[#2a9d8f]/40 hover:bg-[#2a9d8f]/5 transition-colors"
+              className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border/40 rounded-lg p-5 min-h-40 hover:border-[#2a9d8f]/40 hover:bg-[#2a9d8f]/5 transition-colors"
             >
               <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
                 <Plus size={20} className="text-muted-foreground" />
