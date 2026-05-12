@@ -34,3 +34,6 @@ htmlcov/
 
 # mypy
 .mypy_cache/
+
+# Dev notes
+NOTES.md
