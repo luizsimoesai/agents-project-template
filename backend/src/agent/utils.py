@@ -19,8 +19,7 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
     """
     if not fully_specified_name or not fully_specified_name.strip():
         raise ValueError(
-            "fully_specified_name must be in 'provider/model' format, "
-            "got empty string"
+            "fully_specified_name must be in 'provider/model' format, got empty string"
         )
     if fully_specified_name.count("/") != 1:
         raise ValueError(

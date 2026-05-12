@@ -7,7 +7,7 @@ from src.core.settings import settings
 # that works natively with Python's asyncio (and therefore with FastAPI).
 engine = create_async_engine(
     settings.db_url,
-    echo=settings.db_echo_log,          # print SQL statements when True
+    echo=settings.db_echo_log,  # print SQL statements when True
     pool_size=settings.sqlalchemy_pool_size,
     max_overflow=settings.sqlalchemy_max_overflow,
 )

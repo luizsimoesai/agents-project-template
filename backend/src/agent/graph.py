@@ -14,9 +14,9 @@ from agent.utils import load_chat_model
 @dynamic_prompt
 def dynamic_system_prompt(request: ModelRequest) -> str:
     context: Context = request.runtime.context or Context()
-    return str(context.system_prompt.format(
-        system_time=datetime.now(tz=UTC).isoformat()
-    ))
+    return str(
+        context.system_prompt.format(system_time=datetime.now(tz=UTC).isoformat())
+    )
 
 
 _model = load_chat_model(os.environ.get("MODEL", "ollama/gpt-oss:120b-cloud"))

@@ -20,6 +20,7 @@ from src.schemas.user import UserRead
 
 # ── Token creation ──────────────────────────────────────────────────────────
 
+
 def test_create_access_token_claims():
     user_id = uuid.uuid4()
     token = create_access_token(user_id)
@@ -48,6 +49,7 @@ def test_create_refresh_token_claims():
 
 
 # ── decode_token ─────────────────────────────────────────────────────────────
+
 
 def test_decode_token_valid_access():
     user_id = uuid.uuid4()
@@ -91,6 +93,7 @@ def test_decode_token_expired_raises_401():
 
 # ── get_current_user ─────────────────────────────────────────────────────────
 
+
 async def test_get_current_user_valid_token(user_factory):
     user = user_factory()
     mock_result = MagicMock()
@@ -133,6 +136,7 @@ async def test_get_current_user_inactive_raises_401(user_factory):
 
 
 # ── get_current_admin ────────────────────────────────────────────────────────
+
 
 async def test_get_current_admin_passes_for_admin(user_factory):
     admin = user_factory(is_admin=True)

@@ -10,7 +10,7 @@ table_registry = registry()
 
 @table_registry.mapped_as_dataclass
 class User:
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -36,12 +36,12 @@ class User:
     is_admin: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
-        server_default='false',
+        server_default="false",
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
-        server_default='true',
+        server_default="true",
     )
     created_at: Mapped[datetime] = mapped_column(
         init=False,

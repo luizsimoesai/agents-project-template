@@ -43,9 +43,7 @@ def _make_user_read(**kwargs) -> UserRead:
         email=kwargs.get("email", "test@example.com"),
         is_admin=kwargs.get("is_admin", False),
         is_active=kwargs.get("is_active", True),
-        created_at=kwargs.get(
-            "created_at", datetime(2024, 1, 1, tzinfo=timezone.utc)
-        ),
+        created_at=kwargs.get("created_at", datetime(2024, 1, 1, tzinfo=timezone.utc)),
     )
 
 
