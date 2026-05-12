@@ -38,9 +38,6 @@ class User:
         default=False,
         server_default='false',
     )
-    # is_active controls whether the user can log in and access the API.
-    # Defaults to True so every new account starts enabled.
-    # Only an admin can flip this flag via PATCH /users/{id}/activate|deactivate.
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

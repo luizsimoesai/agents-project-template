@@ -27,25 +27,16 @@ Edite o `.env` e preencha pelo menos:
 ### 2. Instalar dependências
 
 ```bash
+cd backend
+
+uv venv
 uv sync
+
+uv run aegra dev # ou task run
 ```
 
-### 3. Subir o banco de dados
 
 ```bash
-docker compose up postgres -d
-```
-
-### 4. Rodar as migrations
-
-```bash
-uv run alembic upgrade head
-```
-
-### 5. Subir o servidor
-
-```bash
-task run
 # Servidor: http://localhost:2026
 # Docs (Swagger): http://localhost:2026/docs
 ```

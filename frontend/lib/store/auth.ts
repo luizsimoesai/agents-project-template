@@ -7,9 +7,10 @@ const COOKIE_NAME = "access_token"
 // for route protection AND the client can set/clear it. This means it is accessible
 // to JavaScript — an accepted trade-off for this architecture. Mitigate XSS risk
 // by using CSP headers and never storing sensitive data beyond the JWT token.
-function setCookie(value: string) {
+function setCookie(value: string, expiresIn?: number) {
   if (typeof document === "undefined") return
-  document.cookie = `${COOKIE_NAME}=${value};path=/;SameSite=Lax`
+  const maxAge = expiresIn ? `;Max-Age=${expiresIn}` : ""
+  document.cookie = `${COOKIE_NAME}=${value};path=/;SameSite=Lax${maxAge}`
 }
 
 function removeCookie() {
@@ -20,15 +21,15 @@ function removeCookie() {
 interface AuthStore {
   accessToken: string | null
   user: UserRead | null
-  setAuth: (token: string, user: UserRead) => void  // also writes access_token cookie
-  clearAuth: () => void                              // also removes cookie and localStorage
+  setAuth: (token: string, user: UserRead, expiresIn?: number) => void
+  clearAuth: () => void
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
   accessToken: null,
   user: null,
-  setAuth: (token, user) => {
-    setCookie(token)
+  setAuth: (token, user, expiresIn) => {
+    setCookie(token, expiresIn)
     set({ accessToken: token, user })
   },
   clearAuth: () => {

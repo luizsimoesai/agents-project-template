@@ -58,7 +58,10 @@ async def get_user(
     return await user_service.get_user(user_id)
 
 
-@router.patch("/{user_id}")
+@router.patch(
+    "/{user_id}",
+    dependencies=[Depends(get_current_admin)],
+)
 async def update_user(
     user_id: uuid.UUID,
     data: UserUpdate,

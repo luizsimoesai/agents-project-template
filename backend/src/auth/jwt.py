@@ -1,24 +1,12 @@
-"""Aegra JWT authentication handler.
+"""Aegra JWT authentication handler."""
 
-This module registers a @auth.authenticate handler that validates the same
-Bearer JWT tokens issued by our FastAPI /auth/login endpoint.  Registering
-this handler in aegra.json makes Aegra's *internal* LangGraph endpoints
-(/threads, /runs, /assistants, etc.) require the same tokens, so all traffic
-through the platform is secured with a single, unified auth scheme.
-
-How it integrates:
-  aegra.json  →  "auth": {"path": "./src/auth/jwt.py:auth"}
-  Aegra calls authenticate() on every request to its internal endpoints.
-  Custom FastAPI routes (/api/v1/…) still use our get_current_user dependency.
-"""
+from typing import Any
 
 from jose import JWTError, jwt
 from langgraph_sdk import Auth
 
 from src.core.settings import settings
 
-# The auth object is what Aegra imports; the @auth.authenticate decorator
-# registers our handler so Aegra knows which function to call.
 auth = Auth()
 
 
@@ -79,24 +67,16 @@ async def authenticate(headers: dict[str, str]) -> dict[str, object]:
 
 
 @auth.on.assistants.create
-async def set_assistant_owner(ctx, value):
-    """Tag the assistant with the owner's identity for observability.
-
-    Aegra already scopes all resources to the authenticated user via 'identity',
-    so this metadata is supplementary — useful for admin queries and auditing.
-    """
+async def set_assistant_owner(ctx: Any, value: Any) -> Any:
+    """Tag assistant with owner identity for auditing."""
     if isinstance(value, dict):
         value.setdefault("metadata", {})["owner"] = ctx.user.identity
     return value
 
 
 @auth.on.threads.create
-async def set_thread_owner(ctx, value):
-    """Tag the thread with the owner's identity for observability.
-
-    Aegra already scopes all resources to the authenticated user via 'identity',
-    so this metadata is supplementary — useful for admin queries and auditing.
-    """
+async def set_thread_owner(ctx: Any, value: Any) -> Any:
+    """Tag thread with owner identity for auditing."""
     if isinstance(value, dict):
         value.setdefault("metadata", {})["owner"] = ctx.user.identity
     return value

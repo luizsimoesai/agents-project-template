@@ -900,3 +900,40 @@ if limit_reached:
 
 **Resultado:** a resposta que cruza o limite é exibida por completo. Somente na próxima mensagem o agente retorna a mensagem de limite.
 
+
+----
+
+# 12/05/2026 — Comportamentos internos do Aegra
+
+## Assistente padrão (`_ensure_default_assistants`)
+
+No startup, o Aegra cria automaticamente um assistente para cada grafo registrado em `aegra.json`. O assistente é criado com `user_id="system"` e `metadata.created_by="system"`, usando um UUID determinístico gerado via `uuid5(NAMESPACE, graph_id)` — o mesmo ID é sempre gerado para o mesmo nome de grafo, então reiniciar o servidor não duplica registros.
+
+**Por que existe:** o assistente padrão permite usar o grafo diretamente via API sem criar um assistente primeiro — útil em deployments simples sem gerenciamento de usuários.
+
+**Neste projeto:** cada usuário cria seus próprios assistentes. O assistente `system` nunca aparece no frontend porque `fetchAssistants()` em `frontend/lib/api/assistants.ts` filtra qualquer assistente com `metadata.created_by === "system"`. Não há motivo para remover esse comportamento — o filtro já é a solução correta.
+
+---
+
+## Checkpoints órfãos após deleção de threads
+
+Ao deletar uma thread (`DELETE /threads/{thread_id}`), o Aegra remove o registro da tabela `threads` e cancela runs ativos — mas **não limpa os dados de checkpoint** (`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`). Isso está documentado no próprio docstring do endpoint:
+
+> *"Checkpoint history stored in the graph backend is not affected."*
+
+Em produção com volume de conversas, essas tabelas crescem indefinidamente.
+
+**Status:** bug conhecido, registrado na issue [#288](https://github.com/aegra/aegra/issues/288) do repositório oficial. O PR [#355](https://github.com/aegra/aegra/pulls/355) adiciona `scripts/checkpoint_cleanup.py`, um script de limpeza batchado com `--dry-run`, advisory lock do Postgres e proteção contra threads ativas. Testado em produção com ~3.8M de linhas / 224 GB.
+
+**O que fazer:** aguardar o merge do PR #355 e atualizar o pacote com:
+
+```bash
+cd backend
+uv sync
+```
+
+O constraint `aegra-cli>=0.9.2` em `pyproject.toml` é aberto para cima, então `uv sync` pegará a nova versão automaticamente quando publicada no PyPI. Antes de atualizar, verificar o changelog para breaking changes.
+
+**Dados já acumulados:** o script `checkpoint_cleanup.py` limpa dados existentes — não é apenas preventivo. Usar `--dry-run` primeiro para estimar o impacto antes de executar.
+
+**Por que não usar trigger de banco:** o próprio time do Aegra avaliou e rejeitou essa abordagem na issue #288, pois mistura ownership entre as tabelas do Aegra e as do LangGraph. A solução oficial é application-level (`adelete_thread()` no código do Aegra), o que virá com o PR #355.

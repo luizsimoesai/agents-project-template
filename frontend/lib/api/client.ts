@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/lib/store/auth"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:2024"
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:2026"
 
 let refreshPromise: Promise<boolean> | null = null
 
@@ -25,7 +25,7 @@ export async function tryRefresh(): Promise<boolean> {
       })
       if (!meRes.ok) return false
       const user = await meRes.json()
-      useAuthStore.getState().setAuth(data.access_token, user)
+      useAuthStore.getState().setAuth(data.access_token, user, data.expires_in)
       localStorage.setItem("refresh_token", data.refresh_token)
       return true
     } catch {

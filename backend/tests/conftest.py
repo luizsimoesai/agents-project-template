@@ -1,4 +1,3 @@
-# backend/tests/conftest.py
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -65,7 +64,7 @@ def user_factory():
             "is_active": True,
         }
         defaults.update(kwargs)
-        user = User(
+        user = User(  # type: ignore[call-arg]
             email=defaults["email"],
             password_hash=defaults["password_hash"],
             name=defaults["name"],

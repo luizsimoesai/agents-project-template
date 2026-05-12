@@ -14,7 +14,7 @@ async function throwOnError(res: Response, fallback: string): Promise<never> {
 
 export async function fetchAssistants(): Promise<AssistantRead[]> {
   const res = await apiClient("/assistants")
-  if (!res.ok) return throwOnError(res, "Erro ao buscar assistentes")
+  if (!res.ok) return throwOnError(res, "Failed to fetch assistants")
   const data = await res.json()
   const all: AssistantRead[] = Array.isArray(data) ? data : (data.assistants ?? [])
   return all.filter((a) => a.metadata?.created_by !== "system")
@@ -22,7 +22,7 @@ export async function fetchAssistants(): Promise<AssistantRead[]> {
 
 export async function fetchAssistant(id: string): Promise<AssistantRead> {
   const res = await apiClient(`/assistants/${id}`)
-  if (!res.ok) return throwOnError(res, "Assistente não encontrado")
+  if (!res.ok) return throwOnError(res, "Assistant not found")
   return res.json()
 }
 
@@ -31,7 +31,7 @@ export async function createAssistant(data: AssistantCreate): Promise<AssistantR
     method: "POST",
     body: JSON.stringify({ graph_id: "agent", ...data }),
   })
-  if (!res.ok) return throwOnError(res, "Erro ao criar assistente")
+  if (!res.ok) return throwOnError(res, "Failed to create assistant")
   return res.json()
 }
 
@@ -43,11 +43,11 @@ export async function updateAssistant(
     method: "PATCH",
     body: JSON.stringify(data),
   })
-  if (!res.ok) return throwOnError(res, "Erro ao atualizar assistente")
+  if (!res.ok) return throwOnError(res, "Failed to update assistant")
   return res.json()
 }
 
 export async function deleteAssistant(id: string): Promise<void> {
   const res = await apiClient(`/assistants/${id}`, { method: "DELETE" })
-  if (!res.ok) return throwOnError(res, "Erro ao apagar assistente")
+  if (!res.ok) return throwOnError(res, "Failed to delete assistant")
 }

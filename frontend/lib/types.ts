@@ -1,4 +1,4 @@
-// Tipos espelhados dos schemas do backend (backend/src/schemas/)
+// Types mirrored from backend schemas (backend/src/schemas/)
 
 export interface UserRead {
   id: string

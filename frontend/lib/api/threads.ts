@@ -20,7 +20,7 @@ export async function fetchThreads(): Promise<ThreadRead[]> {
     method: "POST",
     body: JSON.stringify({}),
   })
-  if (!res.ok) return throwOnError(res, "Erro ao buscar conversas")
+  if (!res.ok) return throwOnError(res, "Failed to fetch threads")
   const data = await res.json()
   // Handle both plain array and wrapped { threads: [...] } response shapes
   return Array.isArray(data) ? data : (data.threads ?? [])
@@ -37,7 +37,7 @@ export async function createThread(data: ThreadCreate): Promise<ThreadRead> {
       },
     }),
   })
-  if (!res.ok) return throwOnError(res, "Erro ao criar conversa")
+  if (!res.ok) return throwOnError(res, "Failed to create thread")
   return res.json()
 }
 
@@ -49,20 +49,23 @@ export async function updateThreadMetadata(
     method: "PATCH",
     body: JSON.stringify({ metadata }),
   })
-  if (!res.ok) return throwOnError(res, "Erro ao atualizar conversa")
+  if (!res.ok) return throwOnError(res, "Failed to update thread")
   return res.json()
 }
 
 export async function deleteThread(id: string): Promise<void> {
   const res = await apiClient(`/threads/${id}`, { method: "DELETE" })
-  if (!res.ok) return throwOnError(res, "Erro ao apagar conversa")
+  if (!res.ok) return throwOnError(res, "Failed to delete thread")
 }
 
 // GET /threads/{id}/state — returns the current thread state including all messages.
 // Returns an empty array if the thread has no state yet (new thread).
 export async function fetchThreadState(threadId: string): Promise<unknown[]> {
   const res = await apiClient(`/threads/${threadId}/state`)
-  if (!res.ok) return []
+  if (!res.ok) {
+    if (res.status === 404) return []
+    return throwOnError(res, "Failed to fetch thread history")
+  }
   const data = await res.json()
   return data?.values?.messages ?? []
 }

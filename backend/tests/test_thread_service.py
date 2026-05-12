@@ -1,4 +1,3 @@
-# backend/tests/test_thread_service.py
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
@@ -6,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi import HTTPException, status
 from langchain_core.messages import AIMessage, AIMessageChunk
-
 from src.schemas.thread import ThreadCreate
 from src.services.thread_service import ThreadService
 

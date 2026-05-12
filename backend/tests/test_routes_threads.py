@@ -12,12 +12,12 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 from fastapi import HTTPException
-
-from src.core.security import get_current_user
 from src.schemas.thread import ChatResponse, MessageRead, ThreadRead
-from src.schemas.user import UserRead
 from src.services.assistant_service import AssistantService, get_assistant_service
 from src.services.thread_service import ThreadService, get_thread_service
+
+from src.core.security import get_current_user
+from src.schemas.user import UserRead
 
 # ---------------------------------------------------------------------------
 # HTTP status code constants (avoids PLR2004 magic-number warnings)

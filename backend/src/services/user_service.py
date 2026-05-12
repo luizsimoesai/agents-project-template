@@ -100,7 +100,6 @@ class UserService:
         Raises 404 if the user does not exist, 409 if the new email is taken.
         """
         user = await self._fetch_user(user_id)
-        # model_dump(exclude_none=True) gives us only the fields the client sent.
         for field, value in data.model_dump(exclude_none=True).items():
             setattr(user, field, value)
         try:

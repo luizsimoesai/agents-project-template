@@ -14,7 +14,7 @@ export function useUpdateProfile() {
   const user = useAuthStore((s) => s.user)
   return useMutation({
     mutationFn: (data: UserUpdate) => {
-      if (!user) throw new Error("Usuário não autenticado")
+      if (!user) throw new Error("User not authenticated")
       return updateUser(user.id, data)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: PROFILE_KEY }),

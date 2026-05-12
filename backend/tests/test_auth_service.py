@@ -1,4 +1,3 @@
-# backend/tests/test_auth_service.py
 import uuid
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch

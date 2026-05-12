@@ -6,7 +6,6 @@ import { useStream } from "@langchain/langgraph-sdk/react"
 import { toast } from "sonner"
 import { ChatMessage } from "./ChatMessage"
 import { ChatInput } from "./ChatInput"
-import { BudgetWidget, type BudgetUpdate } from "./BudgetWidget"
 import { useAuthStore } from "@/lib/store/auth"
 import { useThreadState, useUpdateThreadName } from "@/lib/hooks/useThreads"
 import type { Message, AIMessage, ToolMessage } from "@langchain/langgraph-sdk"
@@ -66,7 +65,6 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
   const initialMessageSent = useRef(false)
   const threadNameSet = useRef(false)
   const updateThreadName = useUpdateThreadName()
-  const [budgetData, setBudgetData] = useState<BudgetUpdate | null>(null)
 
   const { data: historicMessages } = useThreadState(threadId)
 
@@ -78,12 +76,6 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
     threadId,
     defaultHeaders: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     messagesKey: "messages",
-    streamMode: ["messages", "custom"],
-    onCustomEvent: (event: Record<string, unknown>) => {
-      if (event.type === "budget_update") {
-        setBudgetData(event as unknown as BudgetUpdate)
-      }
-    },
     onError: (err: unknown) => {
       if (!useAuthStore.getState().accessToken) return
       const message = err instanceof Error ? err.message : "Connection lost"
@@ -151,13 +143,6 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
 
   return (
     <div className="relative flex flex-col h-full">
-      {/* Budget widget — upper right corner */}
-      {budgetData && (
-        <div className="absolute top-3 right-4 z-10">
-          <BudgetWidget data={budgetData} />
-        </div>
-      )}
-
       <div className="flex-1 overflow-y-auto divide-y divide-border/60">
         {displayItems.length === 0 ? (
           <div className="h-full flex items-center justify-center text-muted-foreground px-6 py-4">

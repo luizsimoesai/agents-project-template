@@ -18,7 +18,6 @@ class AuthService:
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        # Compose UserService so we don't duplicate query logic.
         self._user_service = UserService(session)
 
     async def login(self, data: LoginRequest) -> TokenResponse:
@@ -60,12 +59,10 @@ class AuthService:
         refresh token (it is simply discarded) and returns fresh tokens.
         Raises 401 if the refresh token is invalid, expired, or of the wrong type.
         """
-        # decode_token raises 401 automatically if the token is bad or wrong type.
         payload = decode_token(refresh_token, expected_type="refresh")
 
         user_id = uuid.UUID(payload.sub)
 
-        # Issue brand-new tokens — the old refresh token is no longer returned.
         new_access = create_access_token(user_id)
         new_refresh = create_refresh_token(user_id)
 

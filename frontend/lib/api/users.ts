@@ -14,7 +14,7 @@ async function throwOnError(res: Response, fallback: string): Promise<never> {
 
 export async function fetchCurrentUser(): Promise<UserRead> {
   const res = await apiClient("/api/v1/auth/me")
-  if (!res.ok) return throwOnError(res, "Erro ao buscar perfil")
+  if (!res.ok) return throwOnError(res, "Failed to fetch profile")
   return res.json()
 }
 
@@ -23,29 +23,29 @@ export async function updateUser(id: string, data: UserUpdate): Promise<UserRead
     method: "PATCH",
     body: JSON.stringify(data),
   })
-  if (!res.ok) return throwOnError(res, "Erro ao atualizar perfil")
+  if (!res.ok) return throwOnError(res, "Failed to update profile")
   return res.json()
 }
 
 export async function fetchAllUsers(): Promise<UserRead[]> {
   const res = await apiClient("/api/v1/users")
-  if (!res.ok) return throwOnError(res, "Erro ao buscar usuários")
+  if (!res.ok) return throwOnError(res, "Failed to fetch users")
   return res.json()
 }
 
 export async function activateUser(id: string): Promise<UserRead> {
   const res = await apiClient(`/api/v1/users/${id}/activate`, { method: "PATCH" })
-  if (!res.ok) return throwOnError(res, "Erro ao ativar usuário")
+  if (!res.ok) return throwOnError(res, "Failed to activate user")
   return res.json()
 }
 
 export async function deactivateUser(id: string): Promise<UserRead> {
   const res = await apiClient(`/api/v1/users/${id}/deactivate`, { method: "PATCH" })
-  if (!res.ok) return throwOnError(res, "Erro ao desativar usuário")
+  if (!res.ok) return throwOnError(res, "Failed to deactivate user")
   return res.json()
 }
 
 export async function deleteUser(id: string): Promise<void> {
   const res = await apiClient(`/api/v1/users/${id}`, { method: "DELETE" })
-  if (!res.ok) return throwOnError(res, "Erro ao apagar usuário")
+  if (!res.ok) return throwOnError(res, "Failed to delete user")
 }

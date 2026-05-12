@@ -15,11 +15,10 @@ dependencies = [
     "alembic>=1.18.4",
     "pydantic-settings>=2.13.1",
     "asyncpg>=0.31.0",
-    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.22",
     "email-validator>=2.3.0",
-    "langchain-budget-middleware",
 ]
 
 [build-system]
@@ -58,6 +57,10 @@ plugins = ["pydantic.mypy"]
 module = "migrations.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
 [tool.taskipy.tasks]
 lint = 'ruff check && mypy .'
 format = 'ruff format'
@@ -75,6 +78,3 @@ asyncio_mode = 'auto'
 [tool.coverage.run]
 core = "ctrace"
 concurrency = ["thread"]
-
-[tool.uv.sources]
-langchain-budget-middleware = { path = "../../budget-middleware", editable = true }

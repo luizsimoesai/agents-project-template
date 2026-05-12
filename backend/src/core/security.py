@@ -5,6 +5,7 @@ from aegra_api.core.orm import get_session
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,9 +14,6 @@ from src.models.user import User
 from src.schemas.auth import TokenPayload
 from src.schemas.user import UserRead
 
-# OAuth2PasswordBearer extracts the Bearer token from the Authorization header.
-# tokenUrl points to the login endpoint so the OpenAPI /docs UI can obtain tokens
-# automatically when users click "Authorize".
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
@@ -77,9 +75,8 @@ def decode_token(token: str, expected_type: str = "access") -> TokenPayload:
         data = jwt.decode(
             token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
         )
-        # Validate that all required claims are present and well-typed.
         payload = TokenPayload(**data)
-    except (JWTError, Exception):
+    except (JWTError, ValidationError):
         raise credentials_error
 
     # Prevent cross-token misuse: a refresh token must not work as access, and
@@ -107,7 +104,6 @@ async def get_current_user(
     """
     payload = decode_token(token, expected_type="access")
 
-    # Fetch the user from the database using the subject claim (user_id).
     result = await session.execute(
         select(User).where(User.id == uuid.UUID(payload.sub))
     )
@@ -127,7 +123,6 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Return UserRead (never the raw ORM model) so password_hash stays internal.
     return UserRead.model_validate(user)
 
 
