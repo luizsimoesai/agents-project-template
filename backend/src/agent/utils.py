@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import os
+from collections.abc import Callable, Sequence
 from typing import Any, AsyncIterator, Iterator
 
 from langchain.chat_models import init_chat_model
@@ -11,6 +12,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langchain_core.outputs import ChatResult
 from langchain_core.runnables import Runnable
+from langchain_core.tools import BaseTool
 from pydantic import Field
 
 _DEFAULT_MODEL = "ollama/gpt-oss:120b-cloud"
@@ -31,15 +33,15 @@ def load_chat_model(
             f"got '{fully_specified_name}'"
         )
     provider, model = fully_specified_name.split("/", maxsplit=1)
-    if not provider.strip() or not model.strip():
+    provider, model = provider.strip(), model.strip()
+    if not provider or not model:
         raise ValueError(
             f"fully_specified_name must be in 'provider/model' format, "
             f"got '{fully_specified_name}'"
         )
-    kwargs: dict[str, str] = {}
     if base_url:
-        kwargs["base_url"] = base_url
-    return init_chat_model(model, model_provider=provider, **kwargs)
+        return init_chat_model(model, model_provider=provider, base_url=base_url)
+    return init_chat_model(model, model_provider=provider)
 
 
 @functools.lru_cache(maxsize=32)
@@ -48,7 +50,10 @@ def _cached_load(model_id: str, base_url: str | None) -> BaseChatModel:
 
 
 class DynamicModel(BaseChatModel):
-    """Graph-agnostic model proxy that reads model from config.configurable at call time."""
+    """Graph-agnostic model proxy.
+
+    Reads the target model from config.configurable at call time.
+    """
 
     bound_tools: list[Any] = Field(default_factory=list)
     bound_kwargs: dict[str, Any] = Field(default_factory=dict)
@@ -57,8 +62,8 @@ class DynamicModel(BaseChatModel):
     def _llm_type(self) -> str:
         return "dynamic"
 
-    def _resolve(self, config: dict[str, Any] | None) -> Runnable:
-        cfg = (config or {}).get("configurable", {}) if config else {}
+    def _resolve(self, config: dict[str, Any] | None) -> Runnable[Any, Any]:
+        cfg = (config or {}).get("configurable") or {}
         model_id: str = cfg.get("model") or os.environ.get("MODEL", _DEFAULT_MODEL)
         base_url: str | None = cfg.get("model_base_url") or None
         real: BaseChatModel = _cached_load(model_id, base_url)
@@ -66,7 +71,11 @@ class DynamicModel(BaseChatModel):
             return real.bind_tools(self.bound_tools, **self.bound_kwargs)
         return real
 
-    def bind_tools(self, tools: list[Any], **kwargs: Any) -> "DynamicModel":
+    def bind_tools(
+        self,
+        tools: Sequence[dict[str, Any] | type | Callable[..., Any] | BaseTool],
+        **kwargs: Any,
+    ) -> "DynamicModel":
         return DynamicModel(bound_tools=list(tools), bound_kwargs=dict(kwargs))
 
     def _generate(
