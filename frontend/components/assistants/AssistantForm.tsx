@@ -19,7 +19,6 @@ const schema = z.object({
   name: z.string().min(1, "Nome obrigatório"),
   description: z.string().optional(),
   graph_id: z.string().min(1),
-  model: z.string().optional(),
   system_prompt: z.string().optional(),
 })
 
@@ -48,7 +47,6 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
       name: assistant?.name ?? "",
       description: assistant?.description ?? "",
       graph_id: assistant?.graph_id ?? GRAPH_TYPES[0]?.graph_id ?? "agent",
-      model: (assistant?.context as { model?: string })?.model ?? "",
       system_prompt:
         (assistant?.context as { system_prompt?: string })?.system_prompt ?? "",
     },
@@ -62,7 +60,6 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
       description: data.description || undefined,
       graph_id: data.graph_id,
       context: {
-        ...(data.model ? { model: data.model } : {}),
         ...(data.system_prompt ? { system_prompt: data.system_prompt } : {}),
       },
     }
@@ -135,14 +132,6 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
           <div className="space-y-1">
             <Label>Descrição</Label>
             <Input {...register("description")} />
-          </div>
-          <div className="space-y-1">
-            <Label className="font-mono text-xs">model</Label>
-            <Input
-              {...register("model")}
-              placeholder="anthropic/claude-sonnet-4-6"
-              className="font-mono text-sm"
-            />
           </div>
           <div className="space-y-1">
             <Label className="font-mono text-xs">system_prompt</Label>
