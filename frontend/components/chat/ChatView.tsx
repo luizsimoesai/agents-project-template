@@ -214,7 +214,7 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
               disabled={isStreaming}
             >
               <SelectTrigger className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto min-w-45">
-                <SelectValue placeholder="selecionar modelo..." />
+                <SelectValue placeholder="select model..." />
               </SelectTrigger>
               <SelectContent>
                 {models.map((m) => (

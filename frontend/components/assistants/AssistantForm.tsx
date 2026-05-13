@@ -16,7 +16,7 @@ import { GRAPH_TYPES } from "@/lib/graph-types"
 import type { AssistantRead } from "@/lib/types"
 
 const schema = z.object({
-  name: z.string().min(1, "Nome obrigatório"),
+  name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   graph_id: z.string().min(1),
   system_prompt: z.string().optional(),
@@ -67,15 +67,15 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
       if (assistant) {
         const { graph_id: _, ...updatePayload } = payload
         await updateAssistant.mutateAsync(updatePayload)
-        toast.success("Assistant atualizado")
+        toast.success("Assistant updated")
       } else {
         await createAssistant.mutateAsync(payload)
-        toast.success("Assistant criado")
+        toast.success("Assistant created")
       }
       reset()
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao salvar")
+      toast.error(err instanceof Error ? err.message : "Failed to save")
     }
   }
 
@@ -84,13 +84,13 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-mono text-sm">
-            {assistant ? "editar assistant" : "novo assistant"}
+            {assistant ? "edit assistant" : "new assistant"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
           {/* Graph type — cards in create mode, read-only label in edit mode */}
           <div className="space-y-2">
-            <Label className="font-mono text-xs">tipo de agente</Label>
+            <Label className="font-mono text-xs">agent type</Label>
             {assistant ? (
               <p className="text-sm text-muted-foreground">
                 {GRAPH_TYPES.find((g) => g.graph_id === assistant.graph_id)?.label ?? assistant.graph_id}
@@ -130,7 +130,7 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
             )}
           </div>
           <div className="space-y-1">
-            <Label>Descrição</Label>
+            <Label>Description</Label>
             <Input {...register("description")} />
           </div>
           <div className="space-y-1">
@@ -148,10 +148,10 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
               className="flex-1"
               style={{ backgroundColor: "#2a9d8f" }}
             >
-              {isSubmitting ? "salvando..." : "salvar"}
+              {isSubmitting ? "saving..." : "save"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}>
-              cancelar
+              cancel
             </Button>
           </div>
         </form>

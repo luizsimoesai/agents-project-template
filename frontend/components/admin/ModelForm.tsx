@@ -28,11 +28,11 @@ import type { ModelRead } from "@/lib/types"
 const PROVIDERS = ["anthropic", "openai", "ollama", "custom"] as const
 
 const schema = z.object({
-  display_name: z.string().min(1, "Nome obrigatório"),
-  model_id: z.string().min(1, "Model ID obrigatório"),
+  display_name: z.string().min(1, "Name is required"),
+  model_id: z.string().min(1, "Model ID is required"),
   provider: z.enum(PROVIDERS),
   description: z.string().optional(),
-  base_url: z.string().url("URL inválida").optional().or(z.literal("")),
+  base_url: z.string().url("Invalid URL").optional().or(z.literal("")),
   is_active: z.boolean(),
   is_default: z.boolean(),
 })
@@ -111,14 +111,14 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
       if (model) {
         const { model_id: _, provider: __, ...updatePayload } = payload
         await updateModel.mutateAsync(updatePayload)
-        toast.success("Modelo atualizado")
+        toast.success("Model updated")
       } else {
         await createModel.mutateAsync(payload)
-        toast.success("Modelo criado")
+        toast.success("Model created")
       }
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao salvar")
+      toast.error(err instanceof Error ? err.message : "Failed to save")
     }
   }
 
@@ -127,7 +127,7 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-mono text-sm">
-            {model ? "editar modelo" : "novo modelo"}
+            {model ? "edit model" : "new model"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
@@ -179,7 +179,7 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
             <Label className="font-mono text-xs">description</Label>
             <Textarea
               {...register("description")}
-              placeholder="Descrição opcional"
+              placeholder="Optional description"
               className="font-mono text-sm min-h-16"
             />
           </div>
@@ -204,7 +204,7 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
                 onChange={(e) => setValue("is_active", e.target.checked)}
                 className="rounded"
               />
-              <span className="text-sm font-mono">ativo</span>
+              <span className="text-sm font-mono">active</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -213,7 +213,7 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
                 onChange={(e) => setValue("is_default", e.target.checked)}
                 className="rounded"
               />
-              <span className="text-sm font-mono">padrão</span>
+              <span className="text-sm font-mono">default</span>
             </label>
           </div>
 
@@ -224,10 +224,10 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
               className="flex-1"
               style={{ backgroundColor: "#2a9d8f" }}
             >
-              {isSubmitting ? "salvando..." : "salvar"}
+              {isSubmitting ? "saving..." : "save"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}>
-              cancelar
+              cancel
             </Button>
           </div>
         </form>

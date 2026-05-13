@@ -37,10 +37,10 @@ export default function AdminPage() {
       <Tabs defaultValue="users">
         <TabsList className="mb-6">
           <TabsTrigger value="users" className="font-mono text-xs">
-            usuários
+            users
           </TabsTrigger>
           <TabsTrigger value="models" className="font-mono text-xs">
-            modelos
+            models
           </TabsTrigger>
         </TabsList>
         <TabsContent value="users">

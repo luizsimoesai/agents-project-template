@@ -49,18 +49,18 @@ export function AdminModelTable() {
   async function handleDelete(id: string) {
     try {
       await deleteModel.mutateAsync(id)
-      toast.success("Modelo removido")
+      toast.success("Model removed")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao remover")
+      toast.error(err instanceof Error ? err.message : "Failed to remove")
     }
   }
 
   async function handleSetDefault(model: ModelRead) {
     try {
       await setDefault.mutateAsync(model.id)
-      toast.success(`"${model.display_name}" definido como padrão`)
+      toast.success(`"${model.display_name}" set as default`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao definir padrão")
+      toast.error(err instanceof Error ? err.message : "Failed to set default")
     }
   }
 
@@ -74,7 +74,7 @@ export function AdminModelTable() {
           onClick={handleNew}
         >
           <Plus size={12} />
-          novo modelo
+          new model
         </Button>
       </div>
 
@@ -82,12 +82,12 @@ export function AdminModelTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-mono text-xs">nome</TableHead>
+              <TableHead className="font-mono text-xs">name</TableHead>
               <TableHead className="font-mono text-xs">model_id</TableHead>
               <TableHead className="font-mono text-xs">provider</TableHead>
               <TableHead className="font-mono text-xs">base_url</TableHead>
               <TableHead className="font-mono text-xs">status</TableHead>
-              <TableHead className="font-mono text-xs w-[120px]">ações</TableHead>
+              <TableHead className="font-mono text-xs w-30">actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -121,7 +121,7 @@ export function AdminModelTable() {
                         variant={m.is_active ? "outline" : "secondary"}
                         className="font-mono text-xs"
                       >
-                        {m.is_active ? "ativo" : "inativo"}
+                        {m.is_active ? "active" : "inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -139,7 +139,7 @@ export function AdminModelTable() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Definir como padrão"
+                            title="Set as default"
                             onClick={() => handleSetDefault(m)}
                           >
                             <Star size={12} />
@@ -155,8 +155,8 @@ export function AdminModelTable() {
                                 disabled={m.is_default}
                                 title={
                                   m.is_default
-                                    ? "Não é possível deletar o modelo padrão"
-                                    : "Deletar"
+                                    ? "Cannot delete the default model"
+                                    : "Delete"
                                 }
                               />
                             }
@@ -166,20 +166,20 @@ export function AdminModelTable() {
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle className="font-mono">
-                                deletar modelo?
+                                delete model?
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                O modelo <strong>{m.display_name}</strong> será removido
-                                permanentemente.
+                                Model <strong>{m.display_name}</strong> will be permanently
+                                removed.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>cancelar</AlertDialogCancel>
+                              <AlertDialogCancel>cancel</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleDelete(m.id)}
                                 className="bg-destructive hover:bg-destructive/90"
                               >
-                                deletar
+                                delete
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -193,7 +193,7 @@ export function AdminModelTable() {
       </div>
 
       <p className="text-xs text-muted-foreground font-mono">
-        {(models ?? []).length} modelo{(models ?? []).length !== 1 ? "s" : ""}
+        {(models ?? []).length} model{(models ?? []).length !== 1 ? "s" : ""}
       </p>
 
       <ModelForm

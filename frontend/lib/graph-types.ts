@@ -19,13 +19,13 @@ export interface GraphType {
 export const GRAPH_TYPES: GraphType[] = [
   {
     graph_id: "agent",
-    label: "Assistente Rápido",
-    description: "Responde perguntas e executa tarefas usando ferramentas. Ideal para uso geral.",
+    label: "Quick Assistant",
+    description: "Answers questions and executes tasks using tools. Ideal for general use.",
   },
   {
     graph_id: "deep_agent",
-    label: "Assistente de Pesquisa",
-    description: "Planeia tarefas complexas em etapas, pesquisa informação e produz relatórios detalhados.",
+    label: "Research Assistant",
+    description: "Plans complex tasks step by step, researches information, and produces detailed reports.",
   },
 ]
 
