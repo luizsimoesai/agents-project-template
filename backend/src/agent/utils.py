@@ -15,8 +15,6 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from pydantic import Field
 
-_DEFAULT_MODEL = "ollama/gpt-oss:120b-cloud"
-
 
 def load_chat_model(
     fully_specified_name: str,
@@ -64,7 +62,12 @@ class DynamicModel(BaseChatModel):
 
     def _resolve(self, config: dict[str, Any] | None) -> Runnable[Any, Any]:
         cfg = (config or {}).get("configurable") or {}
-        model_id: str = cfg.get("model") or os.environ.get("MODEL", _DEFAULT_MODEL)
+        model_id: str | None = cfg.get("model") or os.environ.get("MODEL")
+        if not model_id:
+            raise ValueError(
+                "No model configured. "
+                "Set MODEL in .env or pass model via config.configurable."
+            )
         base_url: str | None = cfg.get("model_base_url") or None
         real: BaseChatModel = _cached_load(model_id, base_url)
         if self.bound_tools:

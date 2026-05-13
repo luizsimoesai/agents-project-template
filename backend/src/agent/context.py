@@ -18,7 +18,7 @@ class Context:
         metadata={"description": "The system prompt for the agent."},
     )
     model: Annotated[str, {"description": "LLM model as 'provider/model'."}] = field(
-        default="ollama/gpt-oss:120b-cloud",
+        default="",
     )
     model_base_url: Annotated[
         str | None, {"description": "Optional base URL for Ollama or proxy servers."}
