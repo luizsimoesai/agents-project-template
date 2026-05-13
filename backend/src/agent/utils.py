@@ -1,22 +1,26 @@
-"""Utility functions for backend."""
+"""Utility functions and graph-agnostic model proxy for the backend."""
+
+from __future__ import annotations
+
+import functools
+import os
+from typing import Any, AsyncIterator, Iterator
 
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import BaseMessage
+from langchain_core.outputs import ChatResult
+from langchain_core.runnables import Runnable
+from pydantic import Field
+
+_DEFAULT_MODEL = "ollama/gpt-oss:120b-cloud"
 
 
-def load_chat_model(fully_specified_name: str) -> BaseChatModel:
-    """Load a chat model from a fully specified name.
-
-    Args:
-        fully_specified_name: String in the format 'provider/model'
-            e.g. 'openai/gpt-4o-mini', 'anthropic/claude-sonnet-4-20250514'.
-
-    Returns:
-        A BaseChatModel instance.
-
-    Raises:
-        ValueError: If fully_specified_name is not in 'provider/model' format.
-    """
+def load_chat_model(
+    fully_specified_name: str,
+    *,
+    base_url: str | None = None,
+) -> BaseChatModel:
     if not fully_specified_name or not fully_specified_name.strip():
         raise ValueError(
             "fully_specified_name must be in 'provider/model' format, got empty string"
@@ -32,4 +36,62 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
             f"fully_specified_name must be in 'provider/model' format, "
             f"got '{fully_specified_name}'"
         )
-    return init_chat_model(model, model_provider=provider)
+    kwargs: dict[str, str] = {}
+    if base_url:
+        kwargs["base_url"] = base_url
+    return init_chat_model(model, model_provider=provider, **kwargs)
+
+
+@functools.lru_cache(maxsize=32)
+def _cached_load(model_id: str, base_url: str | None) -> BaseChatModel:
+    return load_chat_model(model_id, base_url=base_url)
+
+
+class DynamicModel(BaseChatModel):
+    """Graph-agnostic model proxy that reads model from config.configurable at call time."""
+
+    bound_tools: list[Any] = Field(default_factory=list)
+    bound_kwargs: dict[str, Any] = Field(default_factory=dict)
+
+    @property
+    def _llm_type(self) -> str:
+        return "dynamic"
+
+    def _resolve(self, config: dict[str, Any] | None) -> Runnable:
+        cfg = (config or {}).get("configurable", {}) if config else {}
+        model_id: str = cfg.get("model") or os.environ.get("MODEL", _DEFAULT_MODEL)
+        base_url: str | None = cfg.get("model_base_url") or None
+        real: BaseChatModel = _cached_load(model_id, base_url)
+        if self.bound_tools:
+            return real.bind_tools(self.bound_tools, **self.bound_kwargs)
+        return real
+
+    def bind_tools(self, tools: list[Any], **kwargs: Any) -> "DynamicModel":
+        return DynamicModel(bound_tools=list(tools), bound_kwargs=dict(kwargs))
+
+    def _generate(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: Any = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        raise NotImplementedError("Use invoke/ainvoke/stream/astream")
+
+    def invoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+        return self._resolve(config).invoke(input, config, **kwargs)
+
+    async def ainvoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+        return await self._resolve(config).ainvoke(input, config, **kwargs)
+
+    def stream(self, input: Any, config: Any = None, **kwargs: Any) -> Iterator[Any]:
+        return self._resolve(config).stream(input, config, **kwargs)
+
+    async def astream(
+        self, input: Any, config: Any = None, **kwargs: Any
+    ) -> AsyncIterator[Any]:
+        async for chunk in self._resolve(config).astream(input, config, **kwargs):
+            yield chunk
+
+
+DYNAMIC_MODEL = DynamicModel()
