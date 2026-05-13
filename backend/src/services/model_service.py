@@ -1,6 +1,7 @@
 from aegra_api.core.orm import get_session
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.llm_model import LLMModel
@@ -24,6 +25,7 @@ class ModelService:
         return m
 
     async def _set_default(self, model_id: object) -> ModelRead:
+        """Clear is_default on all models, then set it on the given model."""
         await self.session.execute(update(LLMModel).values(is_default=False))
         await self.session.execute(
             update(LLMModel)
@@ -47,8 +49,15 @@ class ModelService:
             is_default=False,
         )
         self.session.add(m)
-        await self.session.commit()
-        await self.session.refresh(m)
+        try:
+            await self.session.commit()
+            await self.session.refresh(m)
+        except IntegrityError:
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A model with this model_id already exists",
+            )
         if data.is_default:
             return await self._set_default(m.id)
         return ModelRead.model_validate(m)

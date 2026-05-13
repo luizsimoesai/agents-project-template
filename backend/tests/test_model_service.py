@@ -49,7 +49,9 @@ async def test_create_model_success(mock_session, model_factory):
     assert result.model_id == "openai/gpt-4o"
 
 
-async def test_create_model_with_is_default_calls_set_default(mock_session, model_factory):
+async def test_create_model_with_is_default_calls_set_default(
+    mock_session, model_factory
+):
     m = model_factory(model_id="openai/gpt-4o", is_active=True)
     _make_refresh_side_effect(mock_session)
     mock_session.execute.side_effect = [
@@ -67,8 +69,9 @@ async def test_create_model_with_is_default_calls_set_default(mock_session, mode
     )
     result = await service.create_model(data)
 
+    MIN_EXECUTE_CALLS = 2
     assert result.is_default is True
-    assert mock_session.execute.await_count >= 2
+    assert mock_session.execute.await_count >= MIN_EXECUTE_CALLS
 
 
 # ── get_model ─────────────────────────────────────────────────────────────────
@@ -119,7 +122,7 @@ async def test_list_all_models_returns_all(mock_session, model_factory):
 
     result = await service.list_all_models()
 
-    assert len(result) == 2
+    assert len(result) == len(models)
 
 
 # ── update_model ──────────────────────────────────────────────────────────────
@@ -145,6 +148,22 @@ async def test_update_model_not_found_raises_404(mock_session):
         await service.update_model(uuid.uuid4(), ModelUpdate(display_name="X"))
 
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+
+
+async def test_update_model_set_default(mock_session, model_factory):
+    m = model_factory(is_default=False)
+    _make_refresh_side_effect(mock_session)
+    mock_session.execute.side_effect = [
+        _make_execute_result([m]),  # _fetch_model
+        MagicMock(),  # UPDATE is_default=False
+        MagicMock(),  # UPDATE is_default=True
+        _make_execute_result([m]),  # SELECT for get_model in _set_default
+    ]
+    service = ModelService(mock_session)
+
+    result = await service.update_model(m.id, ModelUpdate(is_default=True))
+
+    assert result.is_default is True
 
 
 # ── delete_model ──────────────────────────────────────────────────────────────
