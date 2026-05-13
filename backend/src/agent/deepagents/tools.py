@@ -23,7 +23,7 @@ def _eval_expr(node: ast.expr) -> float:
         op_fn = _SAFE_OPS.get(type(node.op))
         if op_fn is None:
             raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
-        return op_fn(_eval_expr(node.left), _eval_expr(node.right))  # type: ignore[operator]
+        return op_fn(_eval_expr(node.left), _eval_expr(node.right))  # type: ignore[operator,no-any-return]
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
         return -_eval_expr(node.operand)
     raise ValueError(f"Unsupported expression: {ast.dump(node)}")
@@ -37,7 +37,7 @@ def get_current_time() -> str:
 
 @tool
 def calculator(expression: str) -> str:
-    """Evaluate a safe arithmetic expression (e.g. '2 + 3 * 4') and return the result."""
+    """Evaluate a safe arithmetic expression (e.g. '2 + 3 * 4') and return the result."""  # noqa: E501
     try:
         tree = ast.parse(expression, mode="eval")
         result = _eval_expr(tree.body)

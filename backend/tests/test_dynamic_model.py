@@ -1,7 +1,4 @@
-import os
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from src.agent.utils import DynamicModel, load_chat_model
 
@@ -28,7 +25,12 @@ def test_resolve_reads_model_id_from_configurable():
         mock_load.return_value = mock_model
 
         proxy = DynamicModel()
-        config = {"configurable": {"model": "anthropic/claude-sonnet-4-6", "model_base_url": None}}
+        config = {
+            "configurable": {
+                "model": "anthropic/claude-sonnet-4-6",
+                "model_base_url": None,
+            }
+        }
         result = proxy._resolve(config)
 
         mock_load.assert_called_once_with("anthropic/claude-sonnet-4-6", None)

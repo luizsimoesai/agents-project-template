@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import create_access_token, create_refresh_token
 from src.main import app
+from src.models.llm_model import LLMModel
 from src.models.user import User
 
 # Pre-compute a bcrypt hash with low rounds (4) for test speed.
@@ -105,9 +106,7 @@ def make_token():
 def model_factory():
     """Factory that creates LLMModel ORM instances for tests."""
 
-    def make(**kwargs: Any) -> "LLMModel":
-        from src.models.llm_model import LLMModel
-
+    def make(**kwargs: Any) -> LLMModel:
         defaults: dict[str, Any] = {
             "display_name": "Test Model",
             "model_id": "openai/gpt-4o",
