@@ -20,6 +20,37 @@ export interface UserUpdate {
   email?: string
 }
 
+export interface ModelRead {
+  id: string
+  display_name: string
+  model_id: string
+  provider: string
+  description: string | null
+  base_url: string | null
+  is_active: boolean
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ModelCreate {
+  display_name: string
+  model_id: string
+  provider: string
+  description?: string
+  base_url?: string
+  is_active?: boolean
+  is_default?: boolean
+}
+
+export interface ModelUpdate {
+  display_name?: string
+  description?: string
+  base_url?: string
+  is_active?: boolean
+  is_default?: boolean
+}
+
 export interface TokenResponse {
   access_token: string
   refresh_token: string
@@ -66,6 +97,8 @@ export interface ThreadRead {
     assistant_id?: string | null
     thread_assistant_id?: string
     thread_name?: string
+    thread_model?: string
+    thread_model_base_url?: string | null
     owner?: string
     [key: string]: unknown
   }

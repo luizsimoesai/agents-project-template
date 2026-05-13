@@ -54,3 +54,31 @@ export function useThreadState(threadId: string) {
     staleTime: Infinity, // don't re-fetch — useStream takes over once active
   })
 }
+
+export function useThread(threadId: string) {
+  return useQuery({
+    queryKey: THREADS_KEY,
+    queryFn: fetchThreads,
+    select: (threads) => threads.find((t) => t.thread_id === threadId),
+  })
+}
+
+export function useUpdateThreadModel() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      modelId,
+      baseUrl,
+    }: {
+      id: string
+      modelId: string
+      baseUrl: string | null
+    }) =>
+      updateThreadMetadata(id, {
+        thread_model: modelId,
+        thread_model_base_url: baseUrl,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: THREADS_KEY }),
+  })
+}
