@@ -109,6 +109,8 @@ export interface ThreadRead {
 export interface ThreadCreate {
   assistant_id: string
   thread_name?: string
+  thread_model?: string
+  thread_model_base_url?: string | null
 }
 
 export interface ApiError {

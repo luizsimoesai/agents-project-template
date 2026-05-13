@@ -24,6 +24,7 @@ interface ChatViewProps {
   threadId: string
   assistant: AssistantRead
   initialMessage?: string
+  initialModel?: string
 }
 
 function getMessageRole(msg: Message): string {
@@ -65,7 +66,7 @@ function buildHistoricToolCalls(
   })
 }
 
-export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps) {
+export function ChatView({ threadId, assistant, initialMessage, initialModel }: ChatViewProps) {
   const accessToken = useAuthStore((s) => s.accessToken)
   const bottomRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -78,14 +79,14 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
   const { data: models } = useModels()
   const { data: thread } = useThread(threadId)
   const updateThreadModel = useUpdateThreadModel()
-  const [selectedModelId, setSelectedModelId] = useState("")
+  const [selectedModelId, setSelectedModelId] = useState(initialModel ?? "")
 
   useEffect(() => {
     if (!models?.length) return
     const saved = thread?.metadata?.thread_model
     const defaultId = models.find((m) => m.is_default)?.model_id
-    setSelectedModelId((saved as string | undefined) ?? defaultId ?? models[0]?.model_id ?? "")
-  }, [models, thread])
+    setSelectedModelId((saved as string | undefined) ?? initialModel ?? defaultId ?? models[0]?.model_id ?? "")
+  }, [models, thread]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedModel = models?.find((m) => m.model_id === selectedModelId)
 
@@ -116,7 +117,12 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
   useEffect(() => {
     if (!initialMessage || initialMessageSent.current) return
     initialMessageSent.current = true
-    submit({ messages: [{ role: "human", content: initialMessage }] })
+    submit(
+      { messages: [{ role: "human", content: initialMessage }] },
+      initialModel
+        ? { config: { configurable: { model: initialModel, model_base_url: null } } }
+        : undefined
+    )
     router.replace(window.location.pathname, { scroll: false })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

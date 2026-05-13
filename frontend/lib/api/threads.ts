@@ -34,6 +34,8 @@ export async function createThread(data: ThreadCreate): Promise<ThreadRead> {
         // assistant_id is overwritten by Aegra; use thread_assistant_id as our custom key
         thread_assistant_id: data.assistant_id,
         ...(data.thread_name ? { thread_name: data.thread_name } : {}),
+        ...(data.thread_model ? { thread_model: data.thread_model } : {}),
+        ...(data.thread_model_base_url != null ? { thread_model_base_url: data.thread_model_base_url } : {}),
       },
     }),
   })

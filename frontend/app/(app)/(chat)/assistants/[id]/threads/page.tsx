@@ -1,9 +1,18 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useCreateThread } from "@/lib/hooks/useThreads"
+import { useModels } from "@/lib/hooks/useModels"
 import { useAuthStore } from "@/lib/store/auth"
 import { ChatInput } from "@/components/chat/ChatInput"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 function greeting(name: string | null | undefined): string {
   const hour = new Date().getHours()
@@ -17,21 +26,56 @@ export default function ThreadsListPage() {
   const assistantId = params.id as string
   const createThread = useCreateThread()
   const user = useAuthStore((s) => s.user)
+  const { data: models } = useModels()
+  const [selectedModelId, setSelectedModelId] = useState("")
+
+  useEffect(() => {
+    if (!models?.length) return
+    const defaultId = models.find((m) => m.is_default)?.model_id
+    setSelectedModelId(defaultId ?? models[0]?.model_id ?? "")
+  }, [models])
+
+  const selectedModel = models?.find((m) => m.model_id === selectedModelId)
+
+  function handleModelChange(modelId: string | null) {
+    if (modelId) setSelectedModelId(modelId)
+  }
 
   async function handleSubmit(message: string) {
     const name = message.slice(0, 50).trim()
-    const t = await createThread.mutateAsync({ assistant_id: assistantId, thread_name: name })
-    router.replace(
-      `/assistants/${assistantId}/threads/${t.thread_id}?msg=${encodeURIComponent(message)}`
-    )
+    const t = await createThread.mutateAsync({
+      assistant_id: assistantId,
+      thread_name: name,
+      ...(selectedModelId ? { thread_model: selectedModelId, thread_model_base_url: selectedModel?.base_url ?? null } : {}),
+    })
+    const url = new URL(`/assistants/${assistantId}/threads/${t.thread_id}`, window.location.origin)
+    url.searchParams.set("msg", message)
+    if (selectedModelId) url.searchParams.set("model", selectedModelId)
+    router.replace(url.pathname + url.search)
   }
 
   return (
     <div className="flex flex-col h-full items-center justify-center px-6">
-      <div className="w-full max-w-2xl flex flex-col gap-6">
+      <div className="w-full max-w-2xl flex flex-col gap-4">
         <h1 className="text-xl font-medium text-foreground/80 text-center">
           {greeting(user?.name)}
         </h1>
+        {models && models.length > 0 && selectedModelId && (
+          <div className="flex justify-center">
+            <Select value={selectedModelId} onValueChange={handleModelChange}>
+              <SelectTrigger className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto min-w-45">
+                <SelectValue placeholder="select model..." />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((m) => (
+                  <SelectItem key={m.model_id} value={m.model_id} className="font-mono text-xs">
+                    {m.display_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <ChatInput
           onSubmit={handleSubmit}
           onStop={() => {}}
