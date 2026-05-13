@@ -2,6 +2,8 @@
 
 import { useAuthStore } from "@/lib/store/auth"
 import { AdminUserTable } from "@/components/admin/AdminUserTable"
+import { AdminModelTable } from "@/components/admin/AdminModelTable"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -14,8 +16,12 @@ export default function AdminPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4">
         <ShieldCheck size={48} className="text-muted-foreground" />
-        <p className="font-mono text-sm text-muted-foreground">restricted to administrators</p>
-        <Button variant="outline" onClick={() => router.push("/assistants")}>go back</Button>
+        <p className="font-mono text-sm text-muted-foreground">
+          restricted to administrators
+        </p>
+        <Button variant="outline" onClick={() => router.push("/assistants")}>
+          go back
+        </Button>
       </div>
     )
   }
@@ -25,10 +31,25 @@ export default function AdminPage() {
       <div className="flex items-center gap-2 mb-6">
         <ShieldCheck size={20} style={{ color: "#2a9d8f" }} />
         <h1 className="text-xl font-mono font-semibold" style={{ color: "#2a9d8f" }}>
-          admin / users
+          admin
         </h1>
       </div>
-      <AdminUserTable />
+      <Tabs defaultValue="users">
+        <TabsList className="mb-6">
+          <TabsTrigger value="users" className="font-mono text-xs">
+            usuários
+          </TabsTrigger>
+          <TabsTrigger value="models" className="font-mono text-xs">
+            modelos
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="users">
+          <AdminUserTable />
+        </TabsContent>
+        <TabsContent value="models">
+          <AdminModelTable />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
