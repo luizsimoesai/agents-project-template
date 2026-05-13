@@ -7,7 +7,15 @@ import { toast } from "sonner"
 import { ChatMessage } from "./ChatMessage"
 import { ChatInput } from "./ChatInput"
 import { useAuthStore } from "@/lib/store/auth"
-import { useThreadState, useUpdateThreadName } from "@/lib/hooks/useThreads"
+import { useThreadState, useUpdateThreadName, useThread, useUpdateThreadModel } from "@/lib/hooks/useThreads"
+import { useModels } from "@/lib/hooks/useModels"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type { Message, AIMessage, ToolMessage } from "@langchain/langgraph-sdk"
 import type { AssistantRead } from "@/lib/types"
 import type { RenderedToolCall } from "./ToolCallBadge"
@@ -67,6 +75,27 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
   const updateThreadName = useUpdateThreadName()
 
   const { data: historicMessages } = useThreadState(threadId)
+  const { data: models } = useModels()
+  const { data: thread } = useThread(threadId)
+  const updateThreadModel = useUpdateThreadModel()
+  const [selectedModelId, setSelectedModelId] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!models?.length) return
+    const saved = thread?.metadata?.thread_model
+    const defaultId = models.find((m) => m.is_default)?.model_id
+    setSelectedModelId((saved as string | undefined) ?? defaultId ?? models[0]?.model_id)
+  }, [models, thread])
+
+  const selectedModel = models?.find((m) => m.model_id === selectedModelId)
+
+  function handleModelChange(modelId: string | null) {
+    if (!modelId) return
+    const m = models?.find((m) => m.model_id === modelId)
+    if (!m) return
+    setSelectedModelId(modelId)
+    updateThreadModel.mutate({ id: threadId, modelId, baseUrl: m.base_url ?? null })
+  }
 
   const { messages, submit, isLoading: isStreaming, stop } = useStream<{
     messages: Array<{ role: string; content: string }>
@@ -110,7 +139,17 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
   }, [messages, historicMessages])
 
   function handleSubmit(content: string) {
-    submit({ messages: [{ role: "human", content }] })
+    submit(
+      { messages: [{ role: "human", content }] },
+      {
+        config: {
+          configurable: {
+            model: selectedModelId,
+            model_base_url: selectedModel?.base_url ?? null,
+          },
+        },
+      }
+    )
   }
 
   const streamMessages = messages ?? []
@@ -166,11 +205,33 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
         <div ref={bottomRef} />
       </div>
 
-      <ChatInput
-        onSubmit={handleSubmit}
-        onStop={stop}
-        isStreaming={isStreaming}
-      />
+      <div className="border-t border-border/60">
+        {models && models.length > 0 && (
+          <div className="px-4 pt-3 pb-0">
+            <Select
+              value={selectedModelId}
+              onValueChange={handleModelChange}
+              disabled={isStreaming}
+            >
+              <SelectTrigger className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto min-w-45">
+                <SelectValue placeholder="selecionar modelo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((m) => (
+                  <SelectItem key={m.model_id} value={m.model_id} className="font-mono text-xs">
+                    {m.display_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        <ChatInput
+          onSubmit={handleSubmit}
+          onStop={stop}
+          isStreaming={isStreaming}
+        />
+      </div>
     </div>
   )
 }
