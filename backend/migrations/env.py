@@ -10,6 +10,7 @@ from alembic import context
 
 from src.core.settings import settings
 from src.models.user import table_registry
+from src.models.llm_model import LLMModel as _LLMModel  # noqa: F401 — registers table in metadata
 
 
 def _ensure_aegra_tables() -> None:
@@ -28,14 +29,13 @@ def _ensure_aegra_tables() -> None:
     """
     try:
         from aegra_api.core.orm import Base as _AegraBase
-        from aegra_api.settings import settings as _aegra_settings
     except ImportError:
         return
 
     from sqlalchemy.ext.asyncio import create_async_engine
 
     async def _create() -> None:
-        _engine = create_async_engine(_aegra_settings.db.database_url)
+        _engine = create_async_engine(settings.db_url)
         try:
             async with _engine.begin() as _conn:
                 await _conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
