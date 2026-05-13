@@ -181,3 +181,40 @@ async def test_delete_default_model_returns_409(test_app):
         res = await client.delete(f"/api/v1/models/{uuid.uuid4()}")
 
     assert res.status_code == _HTTP_409
+
+
+# ── PATCH /api/v1/models/{id} ─────────────────────────────────────────────────
+
+
+async def test_update_model_requires_admin(test_app):
+    test_app.dependency_overrides[get_current_admin] = lambda: (_ for _ in ()).throw(
+        HTTPException(status_code=_HTTP_403, detail="Admin access required")
+    )
+
+    async with _async_client(test_app) as client:
+        res = await client.patch(
+            f"/api/v1/models/{uuid.uuid4()}",
+            json={"display_name": "New Name"},
+            headers={"Authorization": "Bearer fake"},
+        )
+
+    assert res.status_code == _HTTP_403
+
+
+async def test_update_model_success(test_app):
+    updated = _make_model_read(display_name="Updated Name")
+    mock_service = AsyncMock(spec=ModelService)
+    mock_service.update_model.return_value = updated
+
+    admin = _make_user_read()
+    test_app.dependency_overrides[get_current_admin] = lambda: admin
+    test_app.dependency_overrides[get_model_service] = lambda: mock_service
+
+    async with _async_client(test_app) as client:
+        res = await client.patch(
+            f"/api/v1/models/{uuid.uuid4()}",
+            json={"display_name": "Updated Name"},
+        )
+
+    assert res.status_code == _HTTP_200
+    assert res.json()["display_name"] == "Updated Name"
