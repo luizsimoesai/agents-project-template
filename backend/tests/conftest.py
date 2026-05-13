@@ -102,6 +102,41 @@ def make_token():
 
 
 @pytest.fixture
+def model_factory():
+    """Factory that creates LLMModel ORM instances for tests."""
+
+    def make(**kwargs: Any) -> "LLMModel":
+        from src.models.llm_model import LLMModel
+
+        defaults: dict[str, Any] = {
+            "display_name": "Test Model",
+            "model_id": "openai/gpt-4o",
+            "provider": "openai",
+            "description": None,
+            "base_url": None,
+            "is_active": True,
+            "is_default": False,
+        }
+        defaults.update(kwargs)
+        m = LLMModel(  # type: ignore[call-arg]
+            display_name=defaults["display_name"],
+            model_id=defaults["model_id"],
+            provider=defaults["provider"],
+            description=defaults["description"],
+            base_url=defaults["base_url"],
+            is_active=defaults["is_active"],
+            is_default=defaults["is_default"],
+        )
+        if not getattr(m, "id", None):
+            m.id = uuid.uuid4()
+        m.created_at = defaults.get("created_at", datetime.now(timezone.utc))
+        m.updated_at = defaults.get("updated_at", datetime.now(timezone.utc))
+        return m
+
+    return make
+
+
+@pytest.fixture
 def test_app():
     """
     The FastAPI app with dependency_overrides reset before and after each test.
