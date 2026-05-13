@@ -78,13 +78,13 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
   const { data: models } = useModels()
   const { data: thread } = useThread(threadId)
   const updateThreadModel = useUpdateThreadModel()
-  const [selectedModelId, setSelectedModelId] = useState<string | undefined>(undefined)
+  const [selectedModelId, setSelectedModelId] = useState("")
 
   useEffect(() => {
     if (!models?.length) return
     const saved = thread?.metadata?.thread_model
     const defaultId = models.find((m) => m.is_default)?.model_id
-    setSelectedModelId((saved as string | undefined) ?? defaultId ?? models[0]?.model_id)
+    setSelectedModelId((saved as string | undefined) ?? defaultId ?? models[0]?.model_id ?? "")
   }, [models, thread])
 
   const selectedModel = models?.find((m) => m.model_id === selectedModelId)
@@ -206,7 +206,7 @@ export function ChatView({ threadId, assistant, initialMessage }: ChatViewProps)
       </div>
 
       <div className="border-t border-border/60">
-        {models && models.length > 0 && (
+        {models && models.length > 0 && selectedModelId && (
           <div className="px-4 pt-3 pb-0">
             <Select
               value={selectedModelId}
