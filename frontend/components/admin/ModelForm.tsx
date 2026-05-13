@@ -15,22 +15,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useCreateModel, useUpdateModel } from "@/lib/hooks/useModels"
 import type { ModelRead } from "@/lib/types"
-
-const PROVIDERS = ["anthropic", "openai", "ollama", "custom"] as const
 
 const schema = z.object({
   display_name: z.string().min(1, "Name is required"),
   model_id: z.string().min(1, "Model ID is required"),
-  provider: z.enum(PROVIDERS),
+  provider: z.string().min(1, "Provider is required"),
   description: z.string().optional(),
   base_url: z.string().url("Invalid URL").optional().or(z.literal("")),
   is_active: z.boolean(),
@@ -61,7 +52,7 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
     defaultValues: {
       display_name: "",
       model_id: "",
-      provider: "anthropic",
+      provider: "",
       description: "",
       base_url: "",
       is_active: true,
@@ -74,7 +65,7 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
       reset({
         display_name: model.display_name,
         model_id: model.model_id,
-        provider: model.provider as (typeof PROVIDERS)[number],
+        provider: model.provider,
         description: model.description ?? "",
         base_url: model.base_url ?? "",
         is_active: model.is_active,
@@ -84,7 +75,7 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
       reset({
         display_name: "",
         model_id: "",
-        provider: "anthropic",
+        provider: "",
         description: "",
         base_url: "",
         is_active: true,
@@ -93,7 +84,6 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
     }
   }, [model, open, reset])
 
-  const selectedProvider = watch("provider")
   const isActive = watch("is_active")
   const isDefault = watch("is_default")
 
@@ -157,21 +147,14 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
             {model ? (
               <p className="text-sm text-muted-foreground font-mono">{model.provider}</p>
             ) : (
-              <Select
-                value={selectedProvider}
-                onValueChange={(v) => setValue("provider", v as (typeof PROVIDERS)[number])}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDERS.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                {...register("provider")}
+                placeholder="anthropic"
+                className="font-mono text-sm"
+              />
+            )}
+            {errors.provider && (
+              <p className="text-xs text-destructive">{errors.provider.message}</p>
             )}
           </div>
 
