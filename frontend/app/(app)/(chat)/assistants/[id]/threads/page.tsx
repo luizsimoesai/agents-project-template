@@ -64,11 +64,14 @@ export default function ThreadsListPage() {
         {models && models.length > 0 && selectedModelId && (
           <div className="flex justify-center">
             <Select value={selectedModelId} onValueChange={handleModelChange}>
-              <SelectTrigger className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto p-0 pr-2 gap-0 overflow-hidden">
+              <SelectTrigger
+                className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto p-0 pr-2 gap-0 overflow-hidden"
+                aria-label={`Model: ${selectedModelId}`}
+              >
                 <span className="px-2.5 h-full flex items-center bg-muted/60 border-r border-border/60 text-muted-foreground shrink-0">
                   Model
                 </span>
-                <SelectValue placeholder="select model..." className="px-2" />
+                <SelectValue placeholder="select model..." className="px-2 min-w-0" />
               </SelectTrigger>
               <SelectContent>
                 {models.map((m) => (
