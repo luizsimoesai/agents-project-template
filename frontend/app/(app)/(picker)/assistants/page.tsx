@@ -124,7 +124,7 @@ export default function AssistantPickerPage() {
                 )}
 
                 {/* Graph type badge */}
-                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-accent text-muted-foreground">
+                <span className="inline-block mt-2 text-[11px] text-accent font-medium">
                   {getGraphType(a.graph_id)?.label ?? a.graph_id}
                 </span>
               </div>
