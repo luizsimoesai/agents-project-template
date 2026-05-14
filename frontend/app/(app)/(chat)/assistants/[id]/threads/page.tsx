@@ -30,7 +30,7 @@ export default function ThreadsListPage() {
   const [selectedModelId, setSelectedModelId] = useState("")
 
   useEffect(() => {
-    if (!models?.length) return
+    if (!models?.length || selectedModelId) return
     const defaultId = models.find((m) => m.is_default)?.model_id
     setSelectedModelId(defaultId ?? models[0]?.model_id ?? "")
   }, [models])
@@ -51,6 +51,7 @@ export default function ThreadsListPage() {
     const url = new URL(`/assistants/${assistantId}/threads/${t.thread_id}`, window.location.origin)
     url.searchParams.set("msg", message)
     if (selectedModelId) url.searchParams.set("model", selectedModelId)
+    if (selectedModel?.base_url) url.searchParams.set("model_base_url", selectedModel.base_url)
     router.replace(url.pathname + url.search)
   }
 
@@ -63,13 +64,16 @@ export default function ThreadsListPage() {
         {models && models.length > 0 && selectedModelId && (
           <div className="flex justify-center">
             <Select value={selectedModelId} onValueChange={handleModelChange}>
-              <SelectTrigger className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto min-w-45">
-                <SelectValue placeholder="select model..." />
+              <SelectTrigger className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto p-0 pr-2 gap-0 overflow-hidden">
+                <span className="px-2.5 h-full flex items-center bg-muted/60 border-r border-border/60 text-muted-foreground shrink-0">
+                  Model
+                </span>
+                <SelectValue placeholder="select model..." className="px-2" />
               </SelectTrigger>
               <SelectContent>
                 {models.map((m) => (
                   <SelectItem key={m.model_id} value={m.model_id} className="font-mono text-xs">
-                    {m.display_name}
+                    {m.model_id}
                   </SelectItem>
                 ))}
               </SelectContent>
