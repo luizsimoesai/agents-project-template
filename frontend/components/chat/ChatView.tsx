@@ -17,6 +17,7 @@ interface ChatViewProps {
   assistant: AssistantRead
   initialMessage?: string
   initialModel?: string
+  initialModelBaseUrl?: string
 }
 
 function getMessageRole(msg: Message): string {
@@ -58,7 +59,7 @@ function buildHistoricToolCalls(
   })
 }
 
-export function ChatView({ threadId, assistant, initialMessage, initialModel }: ChatViewProps) {
+export function ChatView({ threadId, assistant, initialMessage, initialModel, initialModelBaseUrl }: ChatViewProps) {
   const accessToken = useAuthStore((s) => s.accessToken)
   const bottomRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -69,9 +70,10 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel }: 
 
   const { data: historicMessages } = useThreadState(threadId)
   const { data: thread } = useThread(threadId)
-
   // Model for this thread: prefer saved metadata, fall back to initialModel from URL
   const threadModel = (thread?.metadata?.thread_model as string | undefined) || initialModel || undefined
+  const threadModelBaseUrl = (thread?.metadata?.thread_model_base_url as string | null | undefined) ?? null
+  const modelLabel = threadModel
 
   const { messages, submit, isLoading: isStreaming, stop } = useStream<{
     messages: Array<{ role: string; content: string }>
@@ -95,7 +97,7 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel }: 
     submit(
       { messages: [{ role: "human", content: initialMessage }] },
       initialModel
-        ? { config: { configurable: { model: initialModel, model_base_url: null } } }
+        ? { config: { configurable: { model: initialModel, model_base_url: initialModelBaseUrl ?? null } } }
         : undefined
     )
     router.replace(window.location.pathname, { scroll: false })
@@ -123,7 +125,7 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel }: 
     submit(
       { messages: [{ role: "human", content }] },
       threadModel
-        ? { config: { configurable: { model: threadModel, model_base_url: null } } }
+        ? { config: { configurable: { model: threadModel, model_base_url: threadModelBaseUrl } } }
         : undefined
     )
   }
@@ -180,11 +182,12 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel }: 
         <div ref={bottomRef} />
       </div>
 
-      <ChatInput
-        onSubmit={handleSubmit}
-        onStop={stop}
-        isStreaming={isStreaming}
-      />
+        <ChatInput
+          onSubmit={handleSubmit}
+          onStop={stop}
+          isStreaming={isStreaming}
+          modelLabel={modelLabel}
+        />
     </div>
   )
 }
