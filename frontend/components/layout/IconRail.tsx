@@ -7,6 +7,7 @@ import { Workflow, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut } from "luci
 import { useTheme } from "@/components/providers/ThemeProvider"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/lib/store/auth"
+import { logout as apiLogout } from "@/lib/api/auth"
 import {
   Tooltip,
   TooltipContent,
@@ -18,12 +19,14 @@ export function IconRail() {
   const router = useRouter()
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
-  const { user, clearAuth } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
 
-  function handleLogout() {
+  async function handleLogout() {
     queryClient.clear()
-    clearAuth()
+    // Invalidates the refresh-token cookie + jti server-side, then clears
+    // local state. Always navigates regardless of network outcome.
+    await apiLogout()
     router.push("/login")
   }
 

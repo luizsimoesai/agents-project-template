@@ -47,13 +47,13 @@ class UserService:
         try:
             await self.session.commit()
             await self.session.refresh(user)
-        except IntegrityError:
+        except IntegrityError as err:
             # The unique constraint on email was violated.
             await self.session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="A user with this email already exists",
-            )
+            ) from err
         return UserRead.model_validate(user)
 
     async def _fetch_user(self, user_id: object) -> User:
@@ -105,12 +105,12 @@ class UserService:
         try:
             await self.session.commit()
             await self.session.refresh(user)
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="A user with this email already exists",
-            )
+            ) from err
         return UserRead.model_validate(user)
 
     async def set_user_active(self, user_id: object, is_active: bool) -> UserRead:

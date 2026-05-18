@@ -1,5 +1,16 @@
+import os
+
+# Settings() requires JWT_SECRET_KEY and POSTGRES_PASSWORD; force-set both
+# before any import that triggers Settings() instantiation so tests are
+# hermetic regardless of .env contents.
+os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-with-at-least-thirty-two-chars-1234"
+os.environ.setdefault("POSTGRES_PASSWORD", "test-password")
+# slowapi state is process-global; disable in tests so we don't flake near
+# the per-route minute thresholds.
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -77,8 +88,8 @@ def user_factory():
         # must set them explicitly here to allow UserRead.model_validate(user).
         if not getattr(user, "id", None):
             user.id = uuid.uuid4()
-        user.created_at = defaults.get("created_at", datetime.now(timezone.utc))
-        user.updated_at = defaults.get("updated_at", datetime.now(timezone.utc))
+        user.created_at = defaults.get("created_at", datetime.now(UTC))
+        user.updated_at = defaults.get("updated_at", datetime.now(UTC))
         return user
 
     return make
@@ -94,10 +105,10 @@ def make_token():
         token = make_token(user_id, type="refresh")
     """
 
-    def _make(user_id: uuid.UUID, type: str = "access") -> str:
+    def _make(user_id: uuid.UUID, type: str = "access", jti: str = "test-jti") -> str:
         if type == "access":
             return create_access_token(user_id)
-        return create_refresh_token(user_id)
+        return create_refresh_token(user_id, jti=jti)
 
     return _make
 
@@ -128,8 +139,8 @@ def model_factory():
         )
         if not getattr(m, "id", None):
             m.id = uuid.uuid4()
-        m.created_at = defaults.get("created_at", datetime.now(timezone.utc))
-        m.updated_at = defaults.get("updated_at", datetime.now(timezone.utc))
+        m.created_at = defaults.get("created_at", datetime.now(UTC))
+        m.updated_at = defaults.get("updated_at", datetime.now(UTC))
         return m
 
     return make

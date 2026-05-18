@@ -35,6 +35,6 @@ describe("useAssistants", () => {
     })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toHaveLength(1)
-    expect(result.current.data![0].name).toBe("Test")
+    expect(result.current.data![0]!.name).toBe("Test")
   })
 })

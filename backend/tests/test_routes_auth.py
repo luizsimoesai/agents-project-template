@@ -6,7 +6,7 @@ dependency_overrides before and after each test.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import httpx
@@ -14,7 +14,7 @@ import pytest
 from fastapi import HTTPException
 
 from src.core.security import get_current_user
-from src.schemas.auth import TokenResponse
+from src.schemas.auth import TokenPair
 from src.schemas.user import UserRead
 from src.services.auth_service import AuthService, get_auth_service
 from src.services.user_service import UserService, get_user_service
@@ -25,6 +25,7 @@ from src.services.user_service import UserService, get_user_service
 
 _HTTP_200 = 200
 _HTTP_201 = 201
+_HTTP_204 = 204
 _HTTP_401 = 401
 _HTTP_409 = 409
 _HTTP_422 = 422
@@ -33,7 +34,7 @@ _HTTP_422 = 422
 # Helpers
 # ---------------------------------------------------------------------------
 
-_EXPIRES_IN = 1800  # arbitrary; used to build TokenResponse mocks
+_EXPIRES_IN = 1800  # arbitrary; used to build TokenPair mocks
 
 
 def _make_user_read(**kwargs) -> UserRead:
@@ -43,15 +44,14 @@ def _make_user_read(**kwargs) -> UserRead:
         email=kwargs.get("email", "test@example.com"),
         is_admin=kwargs.get("is_admin", False),
         is_active=kwargs.get("is_active", True),
-        created_at=kwargs.get("created_at", datetime(2024, 1, 1, tzinfo=timezone.utc)),
+        created_at=kwargs.get("created_at", datetime(2024, 1, 1, tzinfo=UTC)),
     )
 
 
-def _make_token_response(**kwargs) -> TokenResponse:
-    return TokenResponse(
+def _make_token_pair(**kwargs) -> TokenPair:
+    return TokenPair(
         access_token=kwargs.get("access_token", "access.token.value"),
         refresh_token=kwargs.get("refresh_token", "refresh.token.value"),
-        token_type="bearer",
         expires_in=kwargs.get("expires_in", _EXPIRES_IN),
     )
 
@@ -144,11 +144,10 @@ class TestRegister:
 class TestLogin:
     async def test_login_valid_credentials(self, auth_client):
         client, _, mock_auth_svc = auth_client
-        token_resp = _make_token_response(
+        mock_auth_svc.login.return_value = _make_token_pair(
             access_token="good.access.token",
             refresh_token="good.refresh.token",
         )
-        mock_auth_svc.login.return_value = token_resp
 
         resp = await client.post(
             "/api/v1/auth/login",
@@ -157,9 +156,16 @@ class TestLogin:
 
         assert resp.status_code == _HTTP_200
         body = resp.json()
+        # access token returned in body
         assert body["access_token"] == "good.access.token"
-        assert body["refresh_token"] == "good.refresh.token"
         assert body["token_type"] == "bearer"
+        # refresh token is NOT in body — must be HttpOnly cookie
+        assert "refresh_token" not in body
+        # cookie is set, HttpOnly, scoped to /api/v1/auth
+        set_cookie = resp.headers.get("set-cookie", "")
+        assert "refresh_token=good.refresh.token" in set_cookie
+        assert "HttpOnly" in set_cookie
+        assert "Path=/api/v1/auth" in set_cookie
 
     async def test_login_wrong_password(self, auth_client):
         client, _, mock_auth_svc = auth_client
@@ -221,26 +227,34 @@ class TestMe:
 
 
 class TestRefresh:
-    async def test_refresh_valid_token(self, auth_client):
+    async def test_refresh_valid_cookie(self, auth_client):
         client, _, mock_auth_svc = auth_client
-        token_resp = _make_token_response(
+        mock_auth_svc.refresh.return_value = _make_token_pair(
             access_token="new.access.token",
             refresh_token="new.refresh.token",
         )
-        mock_auth_svc.refresh.return_value = token_resp
 
         resp = await client.post(
             "/api/v1/auth/refresh",
-            json={"refresh_token": "valid.refresh.token"},
+            cookies={"refresh_token": "valid.refresh.token"},
         )
 
         assert resp.status_code == _HTTP_200
         body = resp.json()
-        assert "access_token" in body
         assert body["access_token"] == "new.access.token"
+        assert "refresh_token" not in body
+        # AuthService.refresh received the cookie value
+        mock_auth_svc.refresh.assert_called_once_with("valid.refresh.token")
+        # new refresh cookie was set
+        assert "refresh_token=new.refresh.token" in resp.headers.get("set-cookie", "")
 
-    async def test_refresh_with_access_token(self, auth_client):
-        """Passing an access token where a refresh token is expected -> 401."""
+    async def test_refresh_missing_cookie_returns_401(self, auth_client):
+        client, _, _ = auth_client
+        resp = await client.post("/api/v1/auth/refresh")
+        assert resp.status_code == _HTTP_401
+
+    async def test_refresh_invalid_cookie_returns_401(self, auth_client):
+        """If AuthService.refresh raises 401, the route propagates it."""
         client, _, mock_auth_svc = auth_client
         mock_auth_svc.refresh.side_effect = HTTPException(
             status_code=_HTTP_401, detail="Invalid token type"
@@ -248,7 +262,28 @@ class TestRefresh:
 
         resp = await client.post(
             "/api/v1/auth/refresh",
-            json={"refresh_token": "some.access.token"},
+            cookies={"refresh_token": "bad.token"},
         )
 
         assert resp.status_code == _HTTP_401
+
+
+class TestLogout:
+    async def test_logout_clears_cookie(self, auth_client):
+        client, _, mock_auth_svc = auth_client
+        resp = await client.post(
+            "/api/v1/auth/logout",
+            cookies={"refresh_token": "some.token"},
+        )
+        assert resp.status_code == _HTTP_204
+        mock_auth_svc.logout.assert_called_once_with("some.token")
+        # Set-Cookie clears the cookie (expires in the past)
+        set_cookie = resp.headers.get("set-cookie", "")
+        assert "refresh_token=" in set_cookie
+        assert "Path=/api/v1/auth" in set_cookie
+
+    async def test_logout_without_cookie_is_idempotent(self, auth_client):
+        client, _, mock_auth_svc = auth_client
+        resp = await client.post("/api/v1/auth/logout")
+        assert resp.status_code == _HTTP_204
+        mock_auth_svc.logout.assert_called_once_with(None)

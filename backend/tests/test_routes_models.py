@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import httpx
@@ -26,7 +26,7 @@ def _make_user_read(**kwargs) -> UserRead:
         email="admin@example.com",
         is_admin=kwargs.get("is_admin", True),
         is_active=True,
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 
@@ -40,8 +40,8 @@ def _make_model_read(**kwargs) -> ModelRead:
         base_url=None,
         is_active=kwargs.get("is_active", True),
         is_default=kwargs.get("is_default", False),
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        updated_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2024, 1, 1, tzinfo=UTC),
+        updated_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
 

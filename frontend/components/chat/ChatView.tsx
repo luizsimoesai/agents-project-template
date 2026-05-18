@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { ChatMessage } from "./ChatMessage"
 import { ChatInput } from "./ChatInput"
 import { useAuthStore } from "@/lib/store/auth"
+import { API_URL } from "@/lib/api/client"
 import { useThreadState, useUpdateThreadName, useThread } from "@/lib/hooks/useThreads"
 import type { Message, AIMessage, ToolMessage } from "@langchain/langgraph-sdk"
 import type { AssistantRead } from "@/lib/types"
@@ -63,7 +64,6 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
   const accessToken = useAuthStore((s) => s.accessToken)
   const bottomRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:2024"
   const initialMessageSent = useRef(false)
   const threadNameSet = useRef(false)
   const updateThreadName = useUpdateThreadName()
@@ -78,7 +78,7 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
   const { messages, submit, isLoading: isStreaming, stop } = useStream<{
     messages: Array<{ role: string; content: string }>
   }>({
-    apiUrl,
+    apiUrl: API_URL,
     assistantId: assistant.assistant_id,
     threadId,
     defaultHeaders: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},

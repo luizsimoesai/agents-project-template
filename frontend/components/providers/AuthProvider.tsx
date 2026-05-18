@@ -6,14 +6,12 @@ import { refreshSession } from "@/lib/api/auth"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // If cookie exists but Zustand store is empty (e.g., page reload),
-    // attempt to rehydrate via refresh token
+    // On page reload Zustand state is empty. The refresh token lives in an
+    // HttpOnly cookie we can't read from JS, so we just try /auth/refresh
+    // and let it fail silently if there's no valid cookie.
     const { accessToken } = useAuthStore.getState()
     if (!accessToken) {
-      const refreshToken = localStorage.getItem("refresh_token")
-      if (refreshToken) {
-        refreshSession().catch(() => useAuthStore.getState().clearAuth())
-      }
+      refreshSession().catch(() => useAuthStore.getState().clearAuth())
     }
   }, [])
 

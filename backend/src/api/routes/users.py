@@ -14,12 +14,21 @@ router = APIRouter(
 )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(get_current_admin)],
+)
 async def create_user(
     data: UserCreate,
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserRead:
-    """Create a new user. Returns 409 if the email is already taken."""
+    """Create a new user. Admin only.
+
+    Public sign-up should use POST /api/v1/auth/register instead, which always
+    creates an account with is_admin=false. This admin-only endpoint exists
+    for back-office provisioning; it returns 409 if the email is taken.
+    """
     return await user_service.create_user(data)
 
 

@@ -15,10 +15,25 @@ export async function login(email: string, password: string): Promise<void> {
     } catch { /* non-JSON body, use fallback */ }
     throw new Error(detail)
   }
+  // The refresh token is now an HttpOnly cookie set by the server response;
+  // we only see access_token + expires_in in the body.
   const data = await res.json()
-  localStorage.setItem("refresh_token", data.refresh_token)
   const user = await getMe(data.access_token)
   useAuthStore.getState().setAuth(data.access_token, user, data.expires_in)
+}
+
+export async function logout(): Promise<void> {
+  // Best-effort: clear the cookie + invalidate server-side jti. Always wipe
+  // local state, even if the network call fails.
+  try {
+    await fetch(`${API_URL}/api/v1/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    })
+  } catch {
+    // ignore — we still need to clear local state
+  }
+  useAuthStore.getState().clearAuth()
 }
 
 export async function apiRegister(data: UserCreate): Promise<UserRead> {

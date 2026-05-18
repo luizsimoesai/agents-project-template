@@ -51,9 +51,8 @@ export interface ModelUpdate {
   is_default?: boolean
 }
 
-export interface TokenResponse {
+export interface AccessTokenResponse {
   access_token: string
-  refresh_token: string
   token_type: string
   expires_in: number  // seconds until the access_token expires
 }

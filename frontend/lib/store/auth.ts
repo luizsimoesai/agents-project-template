@@ -34,6 +34,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
   clearAuth: () => {
     removeCookie()
+    // Best-effort: legacy installs may still have a refresh_token in
+    // localStorage from before the HttpOnly cookie migration. Clearing it
+    // here ensures those orphaned values disappear on logout / 401.
     try {
       localStorage.removeItem("refresh_token")
     } catch {

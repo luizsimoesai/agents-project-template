@@ -1,6 +1,6 @@
 # backend/tests/test_security.py
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -29,17 +29,18 @@ def test_create_access_token_claims():
     )
     assert data["sub"] == str(user_id)
     assert data["type"] == "access"
-    assert data["exp"] > datetime.now(timezone.utc).timestamp()
+    assert data["exp"] > datetime.now(UTC).timestamp()
 
 
 def test_create_refresh_token_claims():
     user_id = uuid.uuid4()
-    token = create_refresh_token(user_id)
+    token = create_refresh_token(user_id, jti="some-jti")
     data = jwt.decode(
         token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
     )
     assert data["sub"] == str(user_id)
     assert data["type"] == "refresh"
+    assert data["jti"] == "some-jti"
     # refresh token lifetime must be longer than access token lifetime
     access = create_access_token(user_id)
     access_data = jwt.decode(
@@ -81,7 +82,7 @@ def test_decode_token_expired_raises_401():
     payload = {
         "sub": str(user_id),
         "type": "access",
-        "exp": datetime.now(timezone.utc) - timedelta(minutes=5),
+        "exp": datetime.now(UTC) - timedelta(minutes=5),
     }
     expired_token = jwt.encode(
         payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm

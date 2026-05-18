@@ -43,6 +43,11 @@ class User:
         default=True,
         server_default="true",
     )
+    refresh_jti: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
     created_at: Mapped[datetime] = mapped_column(
         init=False,
         server_default=func.now(),

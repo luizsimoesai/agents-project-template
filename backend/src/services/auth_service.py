@@ -1,13 +1,27 @@
+import secrets
 import uuid
 
+import bcrypt
 from aegra_api.core.orm import get_session
 from fastapi import Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import create_access_token, create_refresh_token, decode_token
 from src.core.settings import settings
-from src.schemas.auth import LoginRequest, TokenResponse
-from src.services.user_service import UserService, _verify_password
+from src.models.user import User
+from src.schemas.auth import LoginRequest, TokenPair
+from src.services.user_service import _BCRYPT_ROUNDS, UserService, _verify_password
+
+# Generated once at import to keep timing-attack mitigation correct.
+# Must use the same cost factor as real password hashing — otherwise the
+# response time differs between "email exists" and "email missing" and the
+# mitigation is defeated. A hand-written constant string cannot be trusted:
+# bcrypt versions vary in what they accept and an invalid hash would raise
+# ValueError, turning the login path into an existence oracle.
+_DUMMY_PASSWORD_HASH = bcrypt.hashpw(
+    b"x", bcrypt.gensalt(rounds=_BCRYPT_ROUNDS)
+).decode()
 
 
 class AuthService:
@@ -20,7 +34,7 @@ class AuthService:
         self.session = session
         self._user_service = UserService(session)
 
-    async def login(self, data: LoginRequest) -> TokenResponse:
+    async def login(self, data: LoginRequest) -> TokenPair:
         """Validate credentials and issue a new token pair.
 
         Security note: we always return the same error message regardless of
@@ -32,8 +46,9 @@ class AuthService:
         # Constant-time comparison: pwd_context.verify avoids timing attacks.
         # We still call verify even when user is None (using a dummy hash) so the
         # response time does not reveal whether the email exists.
-        dummy_hash = "$2b$12$KIXyW8K0pYx6nQ3bXpG6EeP0L0v0v0v0v0v0v0v0v0v0v0v0v0v0O"
-        password_hash = user.password_hash if user is not None else dummy_hash
+        password_hash = (
+            user.password_hash if user is not None else _DUMMY_PASSWORD_HASH
+        )
         valid = _verify_password(data.password, password_hash)
 
         if user is None or not valid or not user.is_active:
@@ -43,34 +58,87 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        access_token = create_access_token(user.id)
-        refresh_token = create_refresh_token(user.id)
+        jti = secrets.token_urlsafe(16)
+        user.refresh_jti = jti
+        await self.session.commit()
 
-        return TokenResponse(
+        access_token = create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id, jti=jti)
+
+        return TokenPair(
             access_token=access_token,
             refresh_token=refresh_token,
             expires_in=settings.access_token_expire_minutes * 60,
         )
 
-    async def refresh(self, refresh_token: str) -> TokenResponse:
-        """Rotate the token pair: validate the refresh token and issue a new pair.
+    async def refresh(self, refresh_token: str) -> TokenPair:
+        """Validate a refresh token and rotate it.
 
-        Token rotation means each call to /auth/refresh invalidates the previous
-        refresh token (it is simply discarded) and returns fresh tokens.
-        Raises 401 if the refresh token is invalid, expired, or of the wrong type.
+        Each refresh token embeds a jti claim that must match the user's
+        stored refresh_jti. Presenting a stale jti — whether due to a
+        legitimate-but-out-of-order request or a replay attack with a stolen
+        token — is rejected and treated as a session compromise: refresh_jti
+        is cleared so even the legitimate session must log in again.
         """
         payload = decode_token(refresh_token, expected_type="refresh")
-
         user_id = uuid.UUID(payload.sub)
 
-        new_access = create_access_token(user_id)
-        new_refresh = create_refresh_token(user_id)
+        result = await self.session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
 
-        return TokenResponse(
+        unauthorized = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        if user is None or not user.is_active:
+            raise unauthorized
+
+        # Reject refresh tokens minted before jti was introduced (jti=None) or
+        # whose jti doesn't match the current stored one.
+        if payload.jti is None or user.refresh_jti != payload.jti:
+            # Replay or stale token: invalidate the entire session so the
+            # legitimate user is forced to re-authenticate.
+            user.refresh_jti = None
+            await self.session.commit()
+            raise unauthorized
+
+        new_jti = secrets.token_urlsafe(16)
+        user.refresh_jti = new_jti
+        await self.session.commit()
+
+        new_access = create_access_token(user_id)
+        new_refresh = create_refresh_token(user_id, jti=new_jti)
+
+        return TokenPair(
             access_token=new_access,
             refresh_token=new_refresh,
             expires_in=settings.access_token_expire_minutes * 60,
         )
+
+    async def logout(self, refresh_token: str | None) -> None:
+        """Best-effort server-side invalidation of the refresh token.
+
+        Clears the user's refresh_jti so any further /auth/refresh with this
+        token is rejected. Silently does nothing if the token is missing,
+        invalid, or expired — the cookie is cleared by the route regardless.
+        """
+        if not refresh_token:
+            return
+        try:
+            payload = decode_token(refresh_token, expected_type="refresh")
+        except HTTPException:
+            return
+
+        result = await self.session.execute(
+            select(User).where(User.id == uuid.UUID(payload.sub))
+        )
+        user = result.scalar_one_or_none()
+        if user is None:
+            return
+        user.refresh_jti = None
+        await self.session.commit()
 
 
 def get_auth_service(

@@ -52,12 +52,12 @@ class ModelService:
         try:
             await self.session.commit()
             await self.session.refresh(m)
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="A model with this model_id already exists",
-            )
+            ) from err
         if data.is_default:
             return await self._set_default(m.id)
         return ModelRead.model_validate(m)

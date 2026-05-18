@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from aegra_api.core.orm import get_session
 from fastapi import Depends, HTTPException, status
@@ -24,7 +24,7 @@ def create_access_token(user_id: uuid.UUID) -> str:
     and includes a 'type' claim so decode_token can reject refresh tokens
     when an access token is required.
     """
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=settings.access_token_expire_minutes
     )
     payload = {
@@ -37,19 +37,24 @@ def create_access_token(user_id: uuid.UUID) -> str:
     )
 
 
-def create_refresh_token(user_id: uuid.UUID) -> str:
+def create_refresh_token(user_id: uuid.UUID, jti: str) -> str:
     """Create a signed JWT refresh token for the given user.
 
     Refresh tokens have a longer lifetime than access tokens and are only
     accepted by the /auth/refresh endpoint — never by protected API routes.
+
+    The jti is a unique identifier persisted server-side as users.refresh_jti.
+    On every /auth/refresh the server rejects any token whose jti does not
+    match the current stored value, which detects replay of a stolen token.
     """
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         days=settings.refresh_token_expire_days
     )
     payload = {
         "sub": str(user_id),
         "type": "refresh",
         "exp": expire,
+        "jti": jti,
     }
     return jwt.encode(  # type: ignore[no-any-return]
         payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
@@ -76,8 +81,8 @@ def decode_token(token: str, expected_type: str = "access") -> TokenPayload:
             token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
         )
         payload = TokenPayload(**data)
-    except (JWTError, ValidationError):
-        raise credentials_error
+    except (JWTError, ValidationError) as err:
+        raise credentials_error from err
 
     # Prevent cross-token misuse: a refresh token must not work as access, and
     # an access token must not work as refresh.

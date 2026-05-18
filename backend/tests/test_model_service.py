@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -12,9 +12,9 @@ from src.services.model_service import ModelService
 def _make_refresh_side_effect(mock_session: AsyncMock) -> None:
     async def do_refresh(obj):
         if not getattr(obj, "created_at", None):
-            obj.created_at = datetime.now(timezone.utc)
+            obj.created_at = datetime.now(UTC)
         if not getattr(obj, "updated_at", None):
-            obj.updated_at = datetime.now(timezone.utc)
+            obj.updated_at = datetime.now(UTC)
 
     mock_session.refresh.side_effect = do_refresh
 
