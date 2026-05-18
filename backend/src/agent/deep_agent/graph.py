@@ -2,9 +2,8 @@
 
 from deepagents import create_deep_agent
 
-from agent.deep_agent.context import Context
 from agent.deep_agent.tools import TOOLS
-from agent.model import configurable_model
+from agent.model import Context, configurable_model
 
 _SYSTEM_PROMPT = """You are a helpful assistant with planning and tool-use capabilities.
 

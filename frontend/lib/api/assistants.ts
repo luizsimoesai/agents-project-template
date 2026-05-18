@@ -1,4 +1,5 @@
 import { apiClient } from "./client"
+import { fetchThreadsByAssistant, deleteThread } from "./threads"
 import type { AssistantRead, AssistantCreate, AssistantUpdate } from "@/lib/types"
 
 async function throwOnError(res: Response, fallback: string): Promise<never> {
@@ -48,6 +49,8 @@ export async function updateAssistant(
 }
 
 export async function deleteAssistant(id: string): Promise<void> {
+  const threads = await fetchThreadsByAssistant(id)
+  await Promise.all(threads.map((t) => deleteThread(t.thread_id)))
   const res = await apiClient(`/assistants/${id}`, { method: "DELETE" })
   if (!res.ok) return throwOnError(res, "Failed to delete assistant")
 }

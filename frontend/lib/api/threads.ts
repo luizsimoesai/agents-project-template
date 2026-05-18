@@ -26,6 +26,27 @@ export async function fetchThreads(): Promise<ThreadRead[]> {
   return Array.isArray(data) ? data : (data.threads ?? [])
 }
 
+export async function fetchThreadsByAssistant(assistantId: string): Promise<ThreadRead[]> {
+  const PAGE_SIZE = 100
+  const all: ThreadRead[] = []
+  let offset = 0
+
+  while (true) {
+    const res = await apiClient("/threads/search", {
+      method: "POST",
+      body: JSON.stringify({ metadata: { thread_assistant_id: assistantId }, limit: PAGE_SIZE, offset }),
+    })
+    if (!res.ok) return throwOnError(res, "Failed to fetch threads for assistant")
+    const data = await res.json()
+    const page: ThreadRead[] = Array.isArray(data) ? data : (data.threads ?? [])
+    all.push(...page)
+    if (page.length < PAGE_SIZE) break
+    offset += PAGE_SIZE
+  }
+
+  return all
+}
+
 export async function createThread(data: ThreadCreate): Promise<ThreadRead> {
   const res = await apiClient("/threads", {
     method: "POST",

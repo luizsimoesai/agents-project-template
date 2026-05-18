@@ -6,6 +6,7 @@ import {
   deleteAssistant,
 } from "@/lib/api/assistants"
 import type { AssistantCreate, AssistantUpdate } from "@/lib/types"
+import { THREADS_KEY } from "./useThreads"
 
 export const ASSISTANTS_KEY = ["assistants"]
 
@@ -33,6 +34,9 @@ export function useDeleteAssistant() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteAssistant(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ASSISTANTS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ASSISTANTS_KEY })
+      qc.invalidateQueries({ queryKey: THREADS_KEY })
+    },
   })
 }
