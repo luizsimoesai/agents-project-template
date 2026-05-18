@@ -18,7 +18,7 @@ export interface GraphType {
 
 export const GRAPH_TYPES: GraphType[] = [
   {
-    graph_id: "agent",
+    graph_id: "basic_agent",
     label: "Quick Assistant",
     description: "Answers questions and executes tasks using tools. Ideal for general use.",
   },

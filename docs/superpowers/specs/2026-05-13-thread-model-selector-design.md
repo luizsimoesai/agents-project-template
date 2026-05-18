@@ -34,6 +34,8 @@ class DynamicModel(BaseChatModel):
         return proxy
 
     # Delegates: invoke, ainvoke, stream, astream → _resolve(config)
+    # _generate is required by BaseChatModel but never called directly;
+    # raise NotImplementedError — all real work goes through invoke/stream.
 
 DYNAMIC_MODEL = DynamicModel()
 ```

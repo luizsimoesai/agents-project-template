@@ -13,7 +13,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Agent Chat",
+  title: "Agent Studio",
   description: "Chat with AI assistants via LangGraph",
 }
 

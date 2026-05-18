@@ -12,6 +12,7 @@ export default function ChatPage() {
   const threadId = params.threadId as string
   const initialMessage = searchParams.get("msg") ?? undefined
   const initialModel = searchParams.get("model") ?? undefined
+  const initialModelBaseUrl = searchParams.get("model_base_url") ?? undefined
 
   const { data: assistants, isLoading } = useAssistants()
   const assistant = assistants?.find((a) => a.assistant_id === assistantId)
@@ -33,5 +34,5 @@ export default function ChatPage() {
     )
   }
 
-  return <ChatView threadId={threadId} assistant={assistant} initialMessage={initialMessage} initialModel={initialModel} />
+  return <ChatView threadId={threadId} assistant={assistant} initialMessage={initialMessage} initialModel={initialModel} initialModelBaseUrl={initialModelBaseUrl} />
 }

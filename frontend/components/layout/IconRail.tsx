@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { Bot, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut } from "lucide-react"
+import { Workflow, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut } from "lucide-react"
 import { useTheme } from "@/components/providers/ThemeProvider"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/lib/store/auth"
@@ -34,7 +34,7 @@ export function IconRail() {
       <div className="w-14 shrink-0 border-r border-border/60 bg-sidebar flex flex-col items-center py-2 gap-1">
         {/* App logo */}
         <div className="w-9 h-9 rounded-md bg-[#2a9d8f] flex items-center justify-center mb-2 shrink-0">
-          <Bot size={18} className="text-white" />
+          <Workflow size={18} className="text-white" />
         </div>
 
         {/* Back to assistants (hidden when already on assistants) */}

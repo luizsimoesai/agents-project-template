@@ -83,6 +83,7 @@ export interface AssistantCreate {
 export interface AssistantUpdate {
   name?: string
   description?: string
+  graph_id?: string
   config?: Record<string, unknown>
   context?: Record<string, unknown>
   metadata?: Record<string, unknown>

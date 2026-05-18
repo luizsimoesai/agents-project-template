@@ -1,4 +1,4 @@
-"""Sample tools for the ReAct agent."""
+"""Sample tools for the basic agent."""
 
 from langchain_core.tools import tool
 

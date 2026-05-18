@@ -3,11 +3,12 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Bot, Pencil, Trash2, Plus } from "lucide-react"
+import { Pencil, Trash2, Plus } from "lucide-react"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAssistants, useDeleteAssistant } from "@/lib/hooks/useAssistants"
 import { AssistantForm } from "@/components/assistants/AssistantForm"
+import { getAssistantIcon } from "@/lib/icon-map"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -84,7 +85,7 @@ export default function AssistantPickerPage() {
                   e.key === "Enter" &&
                   router.push(`/assistants/${a.assistant_id}/threads`)
                 }
-                className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-40"
+                className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-40 flex flex-col"
               >
                 {/* Edit / delete — appear on hover */}
                 <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -106,10 +107,15 @@ export default function AssistantPickerPage() {
                   </button>
                 </div>
 
-                {/* Bot icon */}
-                <div className="w-10 h-10 rounded-md bg-[#2a9d8f] flex items-center justify-center mb-3 shrink-0">
-                  <Bot size={20} className="text-white" />
-                </div>
+                {/* Assistant icon */}
+                {(() => {
+                  const AssistantIcon = getAssistantIcon(a.metadata?.icon as string)
+                  return (
+                    <div className="w-10 h-10 rounded-md bg-[#2a9d8f] flex items-center justify-center mb-3 shrink-0">
+                      <AssistantIcon size={20} className="text-white" />
+                    </div>
+                  )
+                })()}
 
                 {/* Name */}
                 <p className="text-base font-semibold text-foreground truncate">
@@ -123,8 +129,10 @@ export default function AssistantPickerPage() {
                   </p>
                 )}
 
+                <div className="flex-1" />
+
                 {/* Graph type badge */}
-                <span className="inline-block mt-2 text-[11px] text-accent font-medium">
+                <span className="text-[11px] text-accent font-medium">
                   {getGraphType(a.graph_id)?.label ?? a.graph_id}
                 </span>
               </div>

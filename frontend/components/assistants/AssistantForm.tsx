@@ -1,18 +1,25 @@
 "use client"
 
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
+import { ChevronDown } from "lucide-react"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 import { useCreateAssistant, useUpdateAssistant } from "@/lib/hooks/useAssistants"
 import { GRAPH_TYPES } from "@/lib/graph-types"
+import { ASSISTANT_ICONS, DEFAULT_ICON_KEY, getAssistantIcon } from "@/lib/icon-map"
 import type { AssistantRead } from "@/lib/types"
 
 const schema = z.object({
@@ -20,6 +27,7 @@ const schema = z.object({
   description: z.string().optional(),
   graph_id: z.string().min(1),
   system_prompt: z.string().optional(),
+  icon: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -33,6 +41,7 @@ interface AssistantFormProps {
 export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) {
   const createAssistant = useCreateAssistant()
   const updateAssistant = useUpdateAssistant(assistant?.assistant_id ?? "")
+  const [popoverOpen, setPopoverOpen] = useState(false)
 
   const {
     register,
@@ -49,10 +58,14 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
       graph_id: assistant?.graph_id ?? GRAPH_TYPES[0]?.graph_id ?? "agent",
       system_prompt:
         (assistant?.context as { system_prompt?: string })?.system_prompt ?? "",
+      icon: (assistant?.metadata?.icon as string) ?? DEFAULT_ICON_KEY,
     },
   })
 
   const selectedGraphId = watch("graph_id")
+  const selectedIconKey = watch("icon") ?? DEFAULT_ICON_KEY
+  const SelectedIcon = getAssistantIcon(selectedIconKey)
+  const selectedIconLabel = ASSISTANT_ICONS.find((i) => i.key === selectedIconKey)?.label ?? "Sparkles"
 
   async function onSubmit(data: FormData) {
     const payload = {
@@ -62,11 +75,11 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
       context: {
         ...(data.system_prompt ? { system_prompt: data.system_prompt } : {}),
       },
+      metadata: { icon: data.icon ?? DEFAULT_ICON_KEY },
     }
     try {
       if (assistant) {
-        const { graph_id: _, ...updatePayload } = payload
-        await updateAssistant.mutateAsync(updatePayload)
+        await updateAssistant.mutateAsync(payload)
         toast.success("Assistant updated")
       } else {
         await createAssistant.mutateAsync(payload)
@@ -88,7 +101,7 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
-          {/* Graph type — cards in create mode, read-only label in edit mode */}
+          {/* Graph type */}
           <div className="space-y-2">
             <Label className="font-mono text-xs">agent type</Label>
             {assistant ? (
@@ -122,17 +135,63 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
             )}
           </div>
 
+          {/* Icon picker */}
+          <div className="space-y-1.5">
+            <Label>Icon</Label>
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger className="flex items-center gap-2.5 rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent transition-colors w-full">
+                <div className="w-7 h-7 rounded-md bg-[#2a9d8f] flex items-center justify-center shrink-0">
+                  <SelectedIcon size={14} className="text-white" />
+                </div>
+                <span className="flex-1 text-left text-foreground">{selectedIconLabel}</span>
+                <ChevronDown size={14} className="text-muted-foreground shrink-0" />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="start">
+                <div className="grid grid-cols-6 gap-1.5">
+                  {ASSISTANT_ICONS.map((item) => {
+                    const Icon = item.icon
+                    const isSelected = item.key === selectedIconKey
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        title={item.label}
+                        onClick={() => {
+                          setValue("icon", item.key)
+                          setPopoverOpen(false)
+                        }}
+                        className={cn(
+                          "w-9 h-9 rounded-md flex items-center justify-center transition-colors",
+                          isSelected
+                            ? "bg-[#2a9d8f] text-white"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        )}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Name */}
           <div className="space-y-1">
-            <Label>Nome</Label>
+            <Label>Name</Label>
             <Input {...register("name")} />
             {errors.name && (
               <p className="text-xs text-destructive">{errors.name.message}</p>
             )}
           </div>
+
+          {/* Description */}
           <div className="space-y-1">
             <Label>Description</Label>
             <Input {...register("description")} />
           </div>
+
+          {/* System prompt */}
           <div className="space-y-1">
             <Label className="font-mono text-xs">system_prompt</Label>
             <Textarea
@@ -141,6 +200,7 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
               className="font-mono text-sm min-h-28"
             />
           </div>
+
           <div className="flex gap-2 pt-1">
             <Button
               type="submit"
