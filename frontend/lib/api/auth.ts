@@ -64,3 +64,27 @@ export async function refreshSession(): Promise<void> {
   const refreshed = await tryRefresh()
   if (!refreshed) throw new Error("Refresh failed")
 }
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await apiClient("/api/v1/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  })
+  if (!res.ok) {
+    let detail = "Failed to change password"
+    try {
+      const err = await res.json()
+      if (typeof err.detail === "string") detail = err.detail
+    } catch { /* non-JSON body, use fallback */ }
+    throw new Error(detail)
+  }
+  // Server invalidated every refresh token; clear local state so the
+  // in-memory access token cannot be used after the password rotation.
+  useAuthStore.getState().clearAuth()
+}
