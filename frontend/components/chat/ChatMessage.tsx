@@ -8,9 +8,10 @@ interface ChatMessageProps {
   content: string
   isStreaming?: boolean
   toolCalls?: RenderedToolCall[]
+  modelId?: string
 }
 
-export function ChatMessage({ role, content, isStreaming = false, toolCalls }: ChatMessageProps) {
+export function ChatMessage({ role, content, isStreaming = false, toolCalls, modelId }: ChatMessageProps) {
   const isAI = role === "ai" || role === "assistant"
 
   return (
@@ -30,6 +31,11 @@ export function ChatMessage({ role, content, isStreaming = false, toolCalls }: C
         >
           {isAI ? "assistant" : "you"}
         </span>
+        {isAI && modelId && (
+          <span className="font-mono text-[10px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/40 border border-border/40">
+            {modelId}
+          </span>
+        )}
       </div>
 
       <div className={cn("pl-4.5 text-sm leading-7", isAI ? "text-foreground" : "text-foreground/75 whitespace-pre-wrap")}>

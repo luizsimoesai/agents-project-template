@@ -26,4 +26,23 @@ describe("ChatMessage", () => {
     )
     expect(screen.getByTestId("streaming-cursor")).toBeInTheDocument()
   })
+
+  it("renders the model chip on AI messages when modelId is provided", () => {
+    render(
+      <ChatMessage role="ai" content="hi" modelId="anthropic:claude-sonnet-4-6" />
+    )
+    expect(screen.getByText("anthropic:claude-sonnet-4-6")).toBeInTheDocument()
+  })
+
+  it("does not render the chip when modelId is missing", () => {
+    render(<ChatMessage role="ai" content="hi" />)
+    expect(screen.queryByText(/anthropic:|ollama\//)).not.toBeInTheDocument()
+  })
+
+  it("does not render the chip on human messages even if modelId provided", () => {
+    render(
+      <ChatMessage role="human" content="hi" modelId="anthropic:claude-sonnet-4-6" />
+    )
+    expect(screen.queryByText("anthropic:claude-sonnet-4-6")).not.toBeInTheDocument()
+  })
 })
