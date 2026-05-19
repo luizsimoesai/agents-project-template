@@ -1,5 +1,8 @@
 import "@testing-library/jest-dom"
 
+// jsdom does not implement scrollIntoView — stub it globally.
+Element.prototype.scrollIntoView = () => {}
+
 // Node.js 25 ships a built-in localStorage that is incomplete (no .clear, no URL context).
 // Override with a proper in-memory implementation so vitest/jsdom tests work correctly.
 if (typeof localStorage === "undefined" || typeof localStorage.clear !== "function") {

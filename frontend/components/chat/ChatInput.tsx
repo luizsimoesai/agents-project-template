@@ -4,6 +4,8 @@ import { useRef, useState, useEffect } from "react"
 import { Square, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { ModelPicker } from "./ModelPicker"
+import type { ModelRead } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface ChatInputProps {
@@ -12,10 +14,22 @@ interface ChatInputProps {
   isStreaming: boolean
   disabled?: boolean
   centered?: boolean
-  modelLabel?: string
+  // Optional model picker — when `models` is non-empty we render the dropdown.
+  models?: ModelRead[]
+  selectedModelId?: string
+  onModelChange?: (modelId: string) => void
 }
 
-export function ChatInput({ onSubmit, onStop, isStreaming, disabled, centered, modelLabel }: ChatInputProps) {
+export function ChatInput({
+  onSubmit,
+  onStop,
+  isStreaming,
+  disabled,
+  centered,
+  models,
+  selectedModelId,
+  onModelChange,
+}: ChatInputProps) {
   const [value, setValue] = useState("")
   const ref = useRef<HTMLTextAreaElement>(null)
 
@@ -38,14 +52,20 @@ export function ChatInput({ onSubmit, onStop, isStreaming, disabled, centered, m
     ref.current?.focus()
   }
 
+  const showPicker = !!models && models.length > 0 && !!onModelChange
+
   return (
     <div className={centered ? "w-full" : "border-t border-border/60 px-4 py-3"}>
       <div className="bg-card border border-border rounded-xl shadow-sm focus-within:border-[#2a9d8f]/50 focus-within:ring-2 focus-within:ring-[#2a9d8f]/10 transition-all overflow-hidden">
-        {modelLabel && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/40 bg-muted/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#2a9d8f] shrink-0" />
-            <span className="text-[10px] font-mono text-muted-foreground/60">model</span>
-            <span className="text-[10px] font-mono text-muted-foreground font-medium">{modelLabel}</span>
+        {showPicker && (
+          <div className="flex items-center px-2 py-1 border-b border-border/40 bg-muted/20">
+            <ModelPicker
+              compact
+              models={models!}
+              value={selectedModelId ?? ""}
+              onChange={onModelChange!}
+              disabled={isStreaming}
+            />
           </div>
         )}
         <div className="relative flex items-end gap-2 px-3 py-2">
