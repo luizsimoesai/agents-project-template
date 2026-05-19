@@ -9,6 +9,11 @@ import type { AssistantRead, ModelRead, ThreadRead } from "@/lib/types"
 // ---- Mocks -----------------------------------------------------------------
 const submitMock = vi.fn()
 
+const { toastErrorMock } = vi.hoisted(() => ({ toastErrorMock: vi.fn() }))
+vi.mock("sonner", () => ({
+  toast: { error: toastErrorMock },
+}))
+
 vi.mock("@langchain/langgraph-sdk/react", () => ({
   useStream: () => ({
     messages: [],
@@ -82,6 +87,7 @@ function wrap(ui: React.ReactElement) {
 beforeEach(() => {
   submitMock.mockClear()
   updateMetadataMock.mockClear()
+  toastErrorMock.mockClear()
 })
 
 // ---- Tests -----------------------------------------------------------------
@@ -117,6 +123,32 @@ describe("ChatView model switching", () => {
     expect(submitMock).toHaveBeenCalledWith(
       { messages: [{ role: "human", content: "with llama" }] },
       { config: { configurable: { model: "ollama/llama3:8b", model_base_url: "http://localhost:11434" } } }
+    )
+  })
+
+  it("reverts picker and shows toast when the PATCH fails", async () => {
+    updateMetadataMock.mockRejectedValueOnce(new Error("network down"))
+
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    wrap(<ChatView threadId="t1" assistant={assistant} />)
+
+    // Wait for initial seed.
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toHaveTextContent("anthropic:claude-sonnet-4-6")
+    )
+
+    // Switch to llama3 — PATCH will reject.
+    await user.click(screen.getByRole("combobox"))
+    await user.click(screen.getByText("ollama/llama3:8b"))
+
+    // Toast was raised with the error message.
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith("network down")
+    )
+
+    // Picker reverted to the original model.
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toHaveTextContent("anthropic:claude-sonnet-4-6")
     )
   })
 })

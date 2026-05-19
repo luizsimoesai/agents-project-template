@@ -99,7 +99,7 @@ SSE → useStream.messages → ChatView builds displayItems with modelId from ad
 
 ## Error handling & edge cases
 
-- **Model deleted/inactive between runs.** If `thread.metadata.thread_model` references a model no longer in `useModels()`, `ModelPicker` shows the id as a disabled placeholder; user must pick another to continue. Backend still accepts any string parseable by `init_chat_model`, so it's a UX safeguard, not a hard block.
+- **Model deleted/inactive between runs.** If `thread.metadata.thread_model` references a model no longer in `useModels()`, the Base UI `<Select>` falls back to its placeholder (`"select model..."`) since the `value` has no matching `SelectItem`. The user must pick another model to continue. The backend still accepts any string parseable by `init_chat_model`, so it's a UX safeguard, not a hard block. Showing the stale id as a disabled placeholder item is a future enhancement (YAGNI for now).
 - **PATCH /threads fails.** Show toast, revert `selectedModelId` to its previous value. Any message already sent under the new model stays as-is — that's the correct history.
 - **Older AIMessages without `model_id`.** Chip not rendered. No migration, no backfill.
 - **During streaming.** The chip appears when the AIMessage closes (the chunk carrying `additional_kwargs.model_id` is the final one). Mid-stream the chip is absent — acceptable; injecting from `selectedModelId` while streaming adds local state for marginal gain.
