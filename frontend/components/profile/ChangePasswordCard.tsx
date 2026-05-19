@@ -59,6 +59,7 @@ export function ChangePasswordCard() {
               id="currentPassword"
               type="password"
               autoComplete="current-password"
+              aria-invalid={!!errors.currentPassword}
               {...register("currentPassword")}
             />
             {errors.currentPassword && (
@@ -71,6 +72,7 @@ export function ChangePasswordCard() {
               id="newPassword"
               type="password"
               autoComplete="new-password"
+              aria-invalid={!!errors.newPassword}
               {...register("newPassword")}
             />
             {errors.newPassword && (
@@ -83,6 +85,7 @@ export function ChangePasswordCard() {
               id="confirmPassword"
               type="password"
               autoComplete="new-password"
+              aria-invalid={!!errors.confirmPassword}
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
