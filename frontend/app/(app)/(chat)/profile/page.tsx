@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { useProfile, useUpdateProfile } from "@/lib/hooks/useProfile"
+import { ChangePasswordCard } from "@/components/profile/ChangePasswordCard"
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -84,6 +85,8 @@ export default function ProfilePage() {
           </CardContent>
         </form>
       </Card>
+
+      <ChangePasswordCard />
     </div>
   )
 }
