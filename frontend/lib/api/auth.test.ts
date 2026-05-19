@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { useAuthStore } from "@/lib/store/auth"
+import { changePassword } from "./auth"
 
 beforeEach(() => {
   useAuthStore.setState({ accessToken: "live-token", user: null })
   localStorage.clear()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe("changePassword", () => {
@@ -12,7 +14,6 @@ describe("changePassword", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
     vi.stubGlobal("fetch", fetchMock)
 
-    const { changePassword } = await import("./auth")
     await changePassword("password123", "brand-new-password")
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -37,8 +38,6 @@ describe("changePassword", () => {
     )
     vi.stubGlobal("fetch", fetchMock)
 
-    const { changePassword } = await import("./auth")
-
     await expect(
       changePassword("wrong", "brand-new-password"),
     ).rejects.toThrow("Current password is incorrect")
@@ -51,8 +50,6 @@ describe("changePassword", () => {
       new Response("oops", { status: 500 }),
     )
     vi.stubGlobal("fetch", fetchMock)
-
-    const { changePassword } = await import("./auth")
 
     await expect(
       changePassword("password123", "brand-new-password"),
