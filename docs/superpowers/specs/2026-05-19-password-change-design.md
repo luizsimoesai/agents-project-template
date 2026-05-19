@@ -72,8 +72,9 @@ Behavior:
    service revalidates so it is safe to call from other entry points later).
 2. `_verify_password(current_password, user.password_hash)` — false → 400
    `"Current password is incorrect"`.
-3. `_verify_password(new_password, user.password_hash)` — true → 400
-   `"New password must be different from current password"`.
+3. `new_password == current_password` (plain string equality — both are
+   already in memory; running a second bcrypt round here is needless
+   latency) → 400 `"New password must be different from current password"`.
 4. `user.password_hash = _hash_password(new_password)`.
 5. `user.refresh_jti = None`.
 6. `await self.session.commit()`.
