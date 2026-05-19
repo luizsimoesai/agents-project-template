@@ -32,7 +32,11 @@ export function ChatMessage({ role, content, isStreaming = false, toolCalls, mod
           {isAI ? "assistant" : "you"}
         </span>
         {isAI && modelId && (
-          <span className="font-mono text-[10px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/40 border border-border/40">
+          <span
+            data-testid="model-chip"
+            title={modelId}
+            className="font-mono text-[10px] text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/40 border border-border/40 max-w-[20ch] truncate"
+          >
             {modelId}
           </span>
         )}
