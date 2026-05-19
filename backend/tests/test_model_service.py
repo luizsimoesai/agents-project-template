@@ -166,6 +166,30 @@ async def test_update_model_set_default(mock_session, model_factory):
     assert result.is_default is True
 
 
+async def test_set_default_does_not_call_session_begin(mock_session, model_factory):
+    """Regression guard: _set_default must not open a nested transaction.
+
+    Calling ``session.begin()`` after the autobegun transaction from
+    ``session.refresh()`` in ``update_model`` raises
+    ``InvalidRequestError: A transaction is already begun on this Session``
+    in production. The two UPDATEs must commit through the existing
+    autobegun transaction, not via a fresh ``session.begin()`` block.
+    """
+    m = model_factory(is_default=False)
+    _make_refresh_side_effect(mock_session)
+    mock_session.execute.side_effect = [
+        _make_execute_result([m]),  # _fetch_model
+        MagicMock(),  # UPDATE is_default=False
+        MagicMock(),  # UPDATE is_default=True
+        _make_execute_result([m]),  # SELECT for get_model in _set_default
+    ]
+    service = ModelService(mock_session)
+
+    await service.update_model(m.id, ModelUpdate(is_default=True))
+
+    mock_session.begin.assert_not_called()
+
+
 # ── delete_model ──────────────────────────────────────────────────────────────
 
 
