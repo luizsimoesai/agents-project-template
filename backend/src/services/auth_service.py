@@ -159,7 +159,7 @@ class AuthService:
                 detail="Current password is incorrect",
             )
 
-        if _verify_password(data.new_password, user.password_hash):
+        if data.new_password == data.current_password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="New password must be different from current password",

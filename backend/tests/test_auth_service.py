@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import bcrypt
 import pytest
 from fastapi import HTTPException
 from jose import jwt
@@ -9,9 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import decode_token
 from src.core.settings import settings
-from src.schemas.auth import LoginRequest, TokenPair
+from src.schemas.auth import LoginRequest, PasswordChangeRequest, TokenPair
 from src.services.auth_service import AuthService
 
+_HTTP_400 = 400
 _HTTP_401 = 401
 
 
@@ -283,8 +285,6 @@ class TestChangePassword:
     async def test_success_updates_hash_and_clears_refresh_jti(
         self, mock_session, user_factory
     ):
-        from src.schemas.auth import PasswordChangeRequest
-
         user = user_factory()
         user.refresh_jti = "active-jti"
         original_hash = user.password_hash
@@ -300,7 +300,6 @@ class TestChangePassword:
         # password_hash was rotated (different bytes, verifies against the new
         # password — not the old one).
         assert user.password_hash != original_hash
-        import bcrypt
         assert bcrypt.checkpw(b"brand-new-password", user.password_hash.encode())
         assert not bcrypt.checkpw(b"password123", user.password_hash.encode())
         # All refresh sessions invalidated.
@@ -310,8 +309,6 @@ class TestChangePassword:
     async def test_wrong_current_password_raises_400(
         self, mock_session, user_factory
     ):
-        from src.schemas.auth import PasswordChangeRequest
-
         user = user_factory()
         user.refresh_jti = "active-jti"
         original_hash = user.password_hash
@@ -326,7 +323,7 @@ class TestChangePassword:
         with pytest.raises(HTTPException) as exc_info:
             await service.change_password(user.id, data)
 
-        assert exc_info.value.status_code == 400
+        assert exc_info.value.status_code == _HTTP_400
         assert exc_info.value.detail == "Current password is incorrect"
         # No mutation occurred.
         assert user.password_hash == original_hash
@@ -334,8 +331,6 @@ class TestChangePassword:
         mock_session.commit.assert_not_awaited()
 
     async def test_new_equals_current_raises_400(self, mock_session, user_factory):
-        from src.schemas.auth import PasswordChangeRequest
-
         user = user_factory()
         user.refresh_jti = "active-jti"
         original_hash = user.password_hash
@@ -351,8 +346,9 @@ class TestChangePassword:
         with pytest.raises(HTTPException) as exc_info:
             await service.change_password(user.id, data)
 
-        assert exc_info.value.status_code == 400
-        assert exc_info.value.detail == "New password must be different from current password"
+        _msg = "New password must be different from current password"
+        assert exc_info.value.status_code == _HTTP_400
+        assert exc_info.value.detail == _msg
         assert user.password_hash == original_hash
         assert user.refresh_jti == "active-jti"
         mock_session.commit.assert_not_awaited()
