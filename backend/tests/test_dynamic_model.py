@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from src.agent.model import (
     Context,
@@ -184,16 +184,19 @@ class TestConfigurableModel:
             request, _ = _make_request("openai/gpt-4o")
             ai_msg = AIMessage(content="hello")
             human_msg = HumanMessage(content="hi")
-            response = SimpleNamespace(result=[human_msg, ai_msg])
+            tool_msg = ToolMessage(content="ok", tool_call_id="c1")
+            response = SimpleNamespace(result=[human_msg, ai_msg, tool_msg])
 
             async def fake_handler(_req):
                 return response
 
-            await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+            result = await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
 
+            assert result is response
             assert ai_msg.additional_kwargs.get("model_id") == "openai/gpt-4o"
-            # HumanMessage must NOT be touched.
+            # HumanMessage and ToolMessage must NOT be touched.
             assert "model_id" not in human_msg.additional_kwargs
+            assert "model_id" not in tool_msg.additional_kwargs
 
     async def test_does_not_overwrite_existing_model_id(self) -> None:
         fake_model = MagicMock()
@@ -205,7 +208,9 @@ class TestConfigurableModel:
             async def fake_handler(_req):
                 return response
 
-            await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+            result = await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+
+            assert result is response
             assert ai_msg.additional_kwargs["model_id"] == "preset"
 
 
