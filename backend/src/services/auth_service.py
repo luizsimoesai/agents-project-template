@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import (
     _BCRYPT_ROUNDS,
+    _hash_password,
     _verify_password,
     create_access_token,
     create_refresh_token,
@@ -16,7 +17,7 @@ from src.core.security import (
 )
 from src.core.settings import settings
 from src.models.user import User
-from src.schemas.auth import LoginRequest, TokenPair
+from src.schemas.auth import LoginRequest, PasswordChangeRequest, TokenPair
 from src.services.user_service import UserService
 
 # Generated once at import to keep timing-attack mitigation correct.
@@ -122,6 +123,51 @@ class AuthService:
             refresh_token=new_refresh,
             expires_in=settings.access_token_expire_minutes * 60,
         )
+
+    async def change_password(
+        self, user_id: uuid.UUID, data: PasswordChangeRequest
+    ) -> None:
+        """Verify current password, rehash the new one, invalidate all sessions.
+
+        Side effects on success:
+          * users.password_hash is rotated to bcrypt(new_password).
+          * users.refresh_jti is cleared — every active refresh token across
+            every device is invalidated. The route is responsible for also
+            clearing the refresh cookie on the current response.
+
+        Raises:
+            HTTPException 401: user not found or inactive (defensive — the
+                route's get_current_user dependency already filters these
+                cases, but the service revalidates so it stays safe to call
+                from other entry points).
+            HTTPException 400: current_password does not match, OR
+                new_password equals the current password.
+        """
+        result = await self.session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+
+        if user is None or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        if not _verify_password(data.current_password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect",
+            )
+
+        if _verify_password(data.new_password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password must be different from current password",
+            )
+
+        user.password_hash = _hash_password(data.new_password)
+        user.refresh_jti = None
+        await self.session.commit()
 
     async def logout(self, refresh_token: str | None) -> None:
         """Best-effort server-side invalidation of the refresh token.

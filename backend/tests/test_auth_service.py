@@ -266,3 +266,93 @@ async def test_refresh_expired_token_raises_401():
         await service.refresh(expired_token)
 
     assert exc_info.value.status_code == _HTTP_401
+
+
+# ---------------------------------------------------------------------------
+# change_password
+# ---------------------------------------------------------------------------
+
+
+class TestChangePassword:
+    """Service-level tests for AuthService.change_password.
+
+    Covers the happy path (rehash + jti cleared), wrong current password
+    (raises 400, no state changes), and new == current rejection.
+    """
+
+    async def test_success_updates_hash_and_clears_refresh_jti(
+        self, mock_session, user_factory
+    ):
+        from src.schemas.auth import PasswordChangeRequest
+
+        user = user_factory()
+        user.refresh_jti = "active-jti"
+        original_hash = user.password_hash
+        mock_session.execute.return_value = _make_execute_result(user)
+
+        service = AuthService(mock_session)
+        data = PasswordChangeRequest(
+            current_password="password123",
+            new_password="brand-new-password",
+        )
+        await service.change_password(user.id, data)
+
+        # password_hash was rotated (different bytes, verifies against the new
+        # password — not the old one).
+        assert user.password_hash != original_hash
+        import bcrypt
+        assert bcrypt.checkpw(b"brand-new-password", user.password_hash.encode())
+        assert not bcrypt.checkpw(b"password123", user.password_hash.encode())
+        # All refresh sessions invalidated.
+        assert user.refresh_jti is None
+        mock_session.commit.assert_awaited()
+
+    async def test_wrong_current_password_raises_400(
+        self, mock_session, user_factory
+    ):
+        from src.schemas.auth import PasswordChangeRequest
+
+        user = user_factory()
+        user.refresh_jti = "active-jti"
+        original_hash = user.password_hash
+        mock_session.execute.return_value = _make_execute_result(user)
+
+        service = AuthService(mock_session)
+        data = PasswordChangeRequest(
+            current_password="wrong-current",
+            new_password="brand-new-password",
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await service.change_password(user.id, data)
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "Current password is incorrect"
+        # No mutation occurred.
+        assert user.password_hash == original_hash
+        assert user.refresh_jti == "active-jti"
+        mock_session.commit.assert_not_awaited()
+
+    async def test_new_equals_current_raises_400(self, mock_session, user_factory):
+        from src.schemas.auth import PasswordChangeRequest
+
+        user = user_factory()
+        user.refresh_jti = "active-jti"
+        original_hash = user.password_hash
+        mock_session.execute.return_value = _make_execute_result(user)
+
+        service = AuthService(mock_session)
+        # Both current and new are the seeded password.
+        data = PasswordChangeRequest(
+            current_password="password123",
+            new_password="password123",
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await service.change_password(user.id, data)
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "New password must be different from current password"
+        assert user.password_hash == original_hash
+        assert user.refresh_jti == "active-jti"
+        mock_session.commit.assert_not_awaited()

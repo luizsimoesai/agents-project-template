@@ -48,3 +48,22 @@ class TokenPayload(BaseModel):
     exp: datetime
     type: Literal["access", "refresh"]
     jti: str | None = None  # only set on refresh tokens; rotated on every use
+
+
+class PasswordChangeRequest(BaseModel):
+    """Body schema for POST /api/v1/auth/change-password.
+
+    The new_password rule mirrors UserCreate (signup): at least 8 chars.
+    current_password has no length rule — it must just match what is in
+    the database, which the service enforces by bcrypt-verifying it.
+    """
+
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        if len(v) < _MIN_PASSWORD_LEN:
+            raise ValueError("password must be at least 8 characters")
+        return v
