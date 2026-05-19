@@ -110,8 +110,8 @@ describe("ChatView model switching", () => {
 
     // Type a message and send it.
     const textarea = screen.getByPlaceholderText(/Message/i)
-    await userEvent.type(textarea, "with llama")
-    await userEvent.keyboard("{Enter}")
+    await user.type(textarea, "with llama")
+    await user.keyboard("{Enter}")
 
     // submit() carried the new model in config.configurable.
     expect(submitMock).toHaveBeenCalledWith(
