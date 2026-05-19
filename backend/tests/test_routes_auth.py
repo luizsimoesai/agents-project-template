@@ -348,7 +348,7 @@ class TestChangePassword:
 
         mock_auth_svc = AsyncMock(spec=AuthService)
         mock_auth_svc.change_password.side_effect = HTTPException(
-            status_code=400, detail="Current password is incorrect"
+            status_code=_HTTP_400, detail="Current password is incorrect"
         )
         test_app.dependency_overrides[get_auth_service] = lambda: mock_auth_svc
 
@@ -371,7 +371,7 @@ class TestChangePassword:
 
         mock_auth_svc = AsyncMock(spec=AuthService)
         mock_auth_svc.change_password.side_effect = HTTPException(
-            status_code=400,
+            status_code=_HTTP_400,
             detail="New password must be different from current password",
         )
         test_app.dependency_overrides[get_auth_service] = lambda: mock_auth_svc
