@@ -26,6 +26,7 @@ from src.services.user_service import UserService, get_user_service
 _HTTP_200 = 200
 _HTTP_201 = 201
 _HTTP_204 = 204
+_HTTP_400 = 400
 _HTTP_401 = 401
 _HTTP_409 = 409
 _HTTP_422 = 422
@@ -287,3 +288,126 @@ class TestLogout:
         resp = await client.post("/api/v1/auth/logout")
         assert resp.status_code == _HTTP_204
         mock_auth_svc.logout.assert_called_once_with(None)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/auth/change-password
+# ---------------------------------------------------------------------------
+
+
+class TestChangePassword:
+    async def test_success_returns_204_and_clears_cookie(self, test_app):
+        """Happy path: 204, AuthService.change_password is called with the
+        current user's id, and the refresh cookie is cleared in the response."""
+        user = _make_user_read(email="me@example.com")
+        test_app.dependency_overrides[get_current_user] = lambda: user
+
+        mock_auth_svc = AsyncMock(spec=AuthService)
+        test_app.dependency_overrides[get_auth_service] = lambda: mock_auth_svc
+
+        async with _async_client(test_app) as client:
+            resp = await client.post(
+                "/api/v1/auth/change-password",
+                headers={"Authorization": "Bearer dummy"},
+                json={
+                    "current_password": "password123",
+                    "new_password": "brand-new-password",
+                },
+                cookies={"refresh_token": "old.refresh.token"},
+            )
+
+        assert resp.status_code == _HTTP_204
+        # Service called once with user id + request body
+        mock_auth_svc.change_password.assert_awaited_once()
+        called_user_id, called_data = mock_auth_svc.change_password.await_args.args
+        assert called_user_id == user.id
+        assert called_data.current_password == "password123"
+        assert called_data.new_password == "brand-new-password"
+        # Refresh cookie cleared (Set-Cookie clears with Path=/api/v1/auth)
+        set_cookie = resp.headers.get("set-cookie", "")
+        assert "refresh_token=" in set_cookie
+        assert "Path=/api/v1/auth" in set_cookie
+
+    async def test_missing_bearer_returns_401(self, test_app):
+        """OAuth2PasswordBearer returns 401 when the Authorization header
+        is absent — no dependency override so the real dependency runs."""
+        async with _async_client(test_app) as client:
+            resp = await client.post(
+                "/api/v1/auth/change-password",
+                json={
+                    "current_password": "password123",
+                    "new_password": "brand-new-password",
+                },
+            )
+
+        assert resp.status_code == _HTTP_401
+
+    async def test_wrong_current_password_returns_400(self, test_app):
+        user = _make_user_read()
+        test_app.dependency_overrides[get_current_user] = lambda: user
+
+        mock_auth_svc = AsyncMock(spec=AuthService)
+        mock_auth_svc.change_password.side_effect = HTTPException(
+            status_code=400, detail="Current password is incorrect"
+        )
+        test_app.dependency_overrides[get_auth_service] = lambda: mock_auth_svc
+
+        async with _async_client(test_app) as client:
+            resp = await client.post(
+                "/api/v1/auth/change-password",
+                headers={"Authorization": "Bearer dummy"},
+                json={
+                    "current_password": "wrong",
+                    "new_password": "brand-new-password",
+                },
+            )
+
+        assert resp.status_code == _HTTP_400
+        assert resp.json()["detail"] == "Current password is incorrect"
+
+    async def test_new_equals_current_returns_400(self, test_app):
+        user = _make_user_read()
+        test_app.dependency_overrides[get_current_user] = lambda: user
+
+        mock_auth_svc = AsyncMock(spec=AuthService)
+        mock_auth_svc.change_password.side_effect = HTTPException(
+            status_code=400,
+            detail="New password must be different from current password",
+        )
+        test_app.dependency_overrides[get_auth_service] = lambda: mock_auth_svc
+
+        async with _async_client(test_app) as client:
+            resp = await client.post(
+                "/api/v1/auth/change-password",
+                headers={"Authorization": "Bearer dummy"},
+                json={
+                    "current_password": "password123",
+                    "new_password": "password123",
+                },
+            )
+
+        assert resp.status_code == _HTTP_400
+        assert "different from current" in resp.json()["detail"]
+
+    async def test_short_new_password_returns_422(self, test_app):
+        """Pydantic validator rejects new_password shorter than 8 chars."""
+        user = _make_user_read()
+        test_app.dependency_overrides[get_current_user] = lambda: user
+        # get_auth_service must also be overridden — the real dependency
+        # requires a live DB session, and body validation (422) happens
+        # after dependency injection is attempted.
+        test_app.dependency_overrides[get_auth_service] = lambda: AsyncMock(
+            spec=AuthService
+        )
+
+        async with _async_client(test_app) as client:
+            resp = await client.post(
+                "/api/v1/auth/change-password",
+                headers={"Authorization": "Bearer dummy"},
+                json={
+                    "current_password": "password123",
+                    "new_password": "short",
+                },
+            )
+
+        assert resp.status_code == _HTTP_422

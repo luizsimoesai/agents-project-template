@@ -5,7 +5,12 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from src.core.rate_limit import limiter
 from src.core.security import get_current_user
 from src.core.settings import settings
-from src.schemas.auth import AccessTokenResponse, LoginRequest, TokenPair
+from src.schemas.auth import (
+    AccessTokenResponse,
+    LoginRequest,
+    PasswordChangeRequest,
+    TokenPair,
+)
 from src.schemas.user import UserCreate, UserRead
 from src.services.auth_service import AuthService, get_auth_service
 from src.services.user_service import UserService, get_user_service
@@ -132,3 +137,30 @@ async def me(
     expired, or invalid a 401 is returned automatically.
     """
     return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
+async def change_password(
+    request: Request,
+    response: Response,
+    data: PasswordChangeRequest,
+    current_user: Annotated[UserRead, Depends(get_current_user)],
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> None:
+    """Change the current user's password.
+
+    Requires a valid Bearer access token AND the current password.  On
+    success, every refresh token across all devices is invalidated (the
+    service clears users.refresh_jti) and the refresh cookie is cleared
+    on the current response. The frontend must clear its local auth
+    state and redirect to /login.
+
+    Errors:
+      * 401 — Bearer missing/invalid/expired or user inactive.
+      * 400 — current password wrong, or new password equals current.
+      * 422 — new_password shorter than 8 characters.
+      * 429 — rate limit (5/min per IP).
+    """
+    await auth_service.change_password(current_user.id, data)
+    _clear_refresh_cookie(response)
