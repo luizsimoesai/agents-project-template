@@ -11,7 +11,7 @@ from typing import Annotated, Any, cast
 from langchain.agents.middleware import ModelRequest, ModelResponse, wrap_model_call
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 
 
 @dataclass(kw_only=True)
@@ -92,7 +92,14 @@ async def configurable_model(
             "No model configured. Set MODEL in .env or pass via config.configurable."
         )
     model = _load(ctx.model, getattr(ctx, "model_base_url", None))
-    return await handler(request.override(model=model))
+    response = await handler(request.override(model=model))
+    # Stamp the user-chosen model id on each AIMessage so the UI can show
+    # per-message badges in the chat history. We don't overwrite a value
+    # the handler may have set, and we only touch AIMessages.
+    for msg in getattr(response, "result", None) or []:
+        if isinstance(msg, AIMessage) and "model_id" not in msg.additional_kwargs:
+            msg.additional_kwargs["model_id"] = ctx.model
+    return response
 
 
 @wrap_model_call  # type: ignore[arg-type]

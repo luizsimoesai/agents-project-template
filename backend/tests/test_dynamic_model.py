@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from src.agent.model import (
     Context,
@@ -177,6 +177,36 @@ class TestConfigurableModel:
 
         with pytest.raises(ValueError, match="No model configured"):
             await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+
+    async def test_annotates_model_id_on_ai_messages(self) -> None:
+        fake_model = MagicMock(name="loaded_model")
+        with patch("src.agent.model._load", return_value=fake_model):
+            request, _ = _make_request("openai/gpt-4o")
+            ai_msg = AIMessage(content="hello")
+            human_msg = HumanMessage(content="hi")
+            response = SimpleNamespace(result=[human_msg, ai_msg])
+
+            async def fake_handler(_req):
+                return response
+
+            await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+
+            assert ai_msg.additional_kwargs.get("model_id") == "openai/gpt-4o"
+            # HumanMessage must NOT be touched.
+            assert "model_id" not in human_msg.additional_kwargs
+
+    async def test_does_not_overwrite_existing_model_id(self) -> None:
+        fake_model = MagicMock()
+        with patch("src.agent.model._load", return_value=fake_model):
+            request, _ = _make_request("openai/gpt-4o")
+            ai_msg = AIMessage(content="hi", additional_kwargs={"model_id": "preset"})
+            response = SimpleNamespace(result=[ai_msg])
+
+            async def fake_handler(_req):
+                return response
+
+            await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+            assert ai_msg.additional_kwargs["model_id"] == "preset"
 
 
 # ---------------------------------------------------------------------------
