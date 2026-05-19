@@ -7,11 +7,17 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.security import create_access_token, create_refresh_token, decode_token
+from src.core.security import (
+    _BCRYPT_ROUNDS,
+    _verify_password,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+)
 from src.core.settings import settings
 from src.models.user import User
 from src.schemas.auth import LoginRequest, TokenPair
-from src.services.user_service import _BCRYPT_ROUNDS, UserService, _verify_password
+from src.services.user_service import UserService
 
 # Generated once at import to keep timing-attack mitigation correct.
 # Must use the same cost factor as real password hashing — otherwise the

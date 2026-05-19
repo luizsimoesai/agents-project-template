@@ -2,8 +2,8 @@
 
 from deepagents import create_deep_agent
 
-from agent.deep_agent.tools import TOOLS
-from agent.model import Context, configurable_model
+from src.agent.deep_agent.tools import TOOLS
+from src.agent.model import Context, configurable_model, dynamic_system_prompt
 
 _SYSTEM_PROMPT = """You are a helpful assistant with planning and tool-use capabilities.
 
@@ -18,6 +18,6 @@ graph = create_deep_agent(
     tools=TOOLS,
     system_prompt=_SYSTEM_PROMPT,
     context_schema=Context,
-    middleware=[configurable_model],
+    middleware=[configurable_model, dynamic_system_prompt],
     name="deep_agent",
 )

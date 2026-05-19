@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ModelCreate(BaseModel):
@@ -15,7 +15,7 @@ class ModelCreate(BaseModel):
 
 
 class ModelRead(BaseModel):
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     display_name: str

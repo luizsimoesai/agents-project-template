@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import bcrypt
 from aegra_api.core.orm import get_session
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -15,6 +16,18 @@ from src.schemas.auth import TokenPayload
 from src.schemas.user import UserRead
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+# bcrypt cost factor: higher = slower hash = harder to brute-force.
+# OWASP recommends >= 10; 12 is a safe default (~250 ms on modern hardware).
+_BCRYPT_ROUNDS = 12
+
+
+def _hash_password(plain: str) -> str:
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt(rounds=_BCRYPT_ROUNDS)).decode()
+
+
+def _verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_access_token(user_id: uuid.UUID) -> str:

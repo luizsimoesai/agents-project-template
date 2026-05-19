@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 _MIN_PASSWORD_LEN = 8
 
@@ -20,7 +20,7 @@ class UserCreate(BaseModel):
 
 
 class UserRead(BaseModel):
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     name: str | None

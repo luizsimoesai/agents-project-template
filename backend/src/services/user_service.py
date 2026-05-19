@@ -1,24 +1,14 @@
-import bcrypt
+import uuid
+
 from aegra_api.core.orm import get_session
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.security import _hash_password
 from src.models.user import User
 from src.schemas.user import UserCreate, UserRead, UserUpdate
-
-# bcrypt cost factor: higher = slower hash = harder to brute-force.
-# OWASP recommends >= 10; 12 is a safe default (~250 ms on modern hardware).
-_BCRYPT_ROUNDS = 12
-
-
-def _hash_password(plain: str) -> str:
-    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt(rounds=_BCRYPT_ROUNDS)).decode()
-
-
-def _verify_password(plain: str, hashed: str) -> bool:
-    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 class UserService:
@@ -56,7 +46,7 @@ class UserService:
             ) from err
         return UserRead.model_validate(user)
 
-    async def _fetch_user(self, user_id: object) -> User:
+    async def _fetch_user(self, user_id: uuid.UUID) -> User:
         result = await self.session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user is None:
@@ -66,7 +56,7 @@ class UserService:
             )
         return user
 
-    async def get_user(self, user_id: object) -> UserRead:
+    async def get_user(self, user_id: uuid.UUID) -> UserRead:
         """Fetch a user by primary key and return its public representation.
 
         Raises 404 if no user with that ID exists.
@@ -92,15 +82,16 @@ class UserService:
         users = result.scalars().all()
         return [UserRead.model_validate(u) for u in users]
 
-    async def update_user(self, user_id: object, data: UserUpdate) -> UserRead:
+    async def update_user(self, user_id: uuid.UUID, data: UserUpdate) -> UserRead:
         """Apply a partial update (PATCH semantics) to an existing user.
 
-        Only the fields that are explicitly provided (non-None) are written to
-        the database, so the client does not need to resend unchanged values.
+        Only the fields that the client explicitly sent are written, so unsent
+        fields keep their current value and nullable fields can be cleared by
+        passing an explicit ``null``.
         Raises 404 if the user does not exist, 409 if the new email is taken.
         """
         user = await self._fetch_user(user_id)
-        for field, value in data.model_dump(exclude_none=True).items():
+        for field, value in data.model_dump(exclude_unset=True).items():
             setattr(user, field, value)
         try:
             await self.session.commit()
@@ -113,7 +104,7 @@ class UserService:
             ) from err
         return UserRead.model_validate(user)
 
-    async def set_user_active(self, user_id: object, is_active: bool) -> UserRead:
+    async def set_user_active(self, user_id: uuid.UUID, is_active: bool) -> UserRead:
         """Toggle the is_active flag for a user.
 
         Called by the activate and deactivate admin endpoints.
@@ -125,7 +116,7 @@ class UserService:
         await self.session.refresh(user)
         return UserRead.model_validate(user)
 
-    async def delete_user(self, user_id: object) -> None:
+    async def delete_user(self, user_id: uuid.UUID) -> None:
         """Delete a user by primary key.
 
         Raises 404 if the user does not exist.
