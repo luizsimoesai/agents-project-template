@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import Link from "next/link"
 import { useRouter, useParams, usePathname } from "next/navigation"
 import { Plus, Trash2, Pencil, Check, X } from "lucide-react"
 import { toast } from "sonner"
@@ -23,12 +24,12 @@ import { IconRail } from "./IconRail"
 function ThreadItem({
   t,
   isActive,
-  onNavigate,
+  href,
   onDelete,
 }: {
   t: ThreadRead
   isActive: boolean
-  onNavigate: () => void
+  href: string
   onDelete: () => void
 }) {
   const [editing, setEditing] = useState(false)
@@ -102,10 +103,9 @@ function ThreadItem({
         </>
       ) : (
         <>
-          <button
-            type="button"
-            onClick={onNavigate}
-            className="flex items-center gap-2 flex-1 min-w-0 text-left"
+          <Link
+            href={href as never}
+            className="flex items-center gap-2 flex-1 min-w-0 text-left no-underline text-inherit"
           >
             <div
               className={cn(
@@ -114,7 +114,7 @@ function ThreadItem({
               )}
             />
             <span className="truncate font-mono">{label}</span>
-          </button>
+          </Link>
           <button
             type="button"
             aria-label="Rename conversation"
@@ -139,11 +139,11 @@ function ThreadItem({
 
 export function DualSidebar() {
   const router = useRouter()
-  const params = useParams()
+  const { id: assistantId, threadId } = useParams<{
+    id?: string
+    threadId?: string
+  }>()
   const pathname = usePathname()
-
-  const assistantId = params.id as string | undefined
-  const threadId = params.threadId as string | undefined
   const isUtilityPage = pathname.startsWith("/profile") || pathname.startsWith("/admin")
 
   const { data: assistants } = useAssistants()
@@ -152,17 +152,13 @@ export function DualSidebar() {
   const deleteThread = useDeleteThread()
   const [deleteTarget, setDeleteTarget] = useState<ThreadRead | undefined>(undefined)
 
-  function handleNewThread() {
-    if (!assistantId) return
-    router.push(`/assistants/${assistantId}/threads`)
-  }
-
   async function handleDeleteThread() {
     if (!deleteTarget) return
     try {
       await deleteThread.mutateAsync(deleteTarget.thread_id)
       toast.success("Conversation deleted")
-      if (threadId === deleteTarget.thread_id) {
+      if (threadId === deleteTarget.thread_id && assistantId) {
+        // programmatic: navigate away from the just-deleted thread's URL
         router.push(`/assistants/${assistantId}/threads`)
       }
       setDeleteTarget(undefined)
@@ -192,16 +188,17 @@ export function DualSidebar() {
             </div>
 
             {/* New conversation */}
-            <div className="px-2 pt-2 pb-1">
-              <button
-                type="button"
-                onClick={handleNewThread}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium text-[#2a9d8f] border border-[#2a9d8f]/40 hover:bg-[#2a9d8f]/10 hover:border-[#2a9d8f]/60 transition-colors"
-              >
-                <Plus size={13} />
-                <span>New conversation</span>
-              </button>
-            </div>
+            {assistantId && (
+              <div className="px-2 pt-2 pb-1">
+                <Link
+                  href={`/assistants/${assistantId}/threads`}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium text-[#2a9d8f] border border-[#2a9d8f]/40 hover:bg-[#2a9d8f]/10 hover:border-[#2a9d8f]/60 transition-colors no-underline"
+                >
+                  <Plus size={13} />
+                  <span>New conversation</span>
+                </Link>
+              </div>
+            )}
 
             {/* Thread list */}
             <div className="flex-1 overflow-y-auto py-2 px-2">
@@ -218,7 +215,7 @@ export function DualSidebar() {
                   key={t.thread_id}
                   t={t}
                   isActive={threadId === t.thread_id}
-                  onNavigate={() => router.push(`/assistants/${assistantId}/threads/${t.thread_id}`)}
+                  href={`/assistants/${assistantId}/threads/${t.thread_id}`}
                   onDelete={() => setDeleteTarget(t)}
                 />
               ))}

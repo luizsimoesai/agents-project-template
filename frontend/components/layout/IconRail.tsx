@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import type { Route } from "next"
+import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Workflow, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut } from "lucide-react"
@@ -42,10 +43,10 @@ export function IconRail() {
 
         {/* Back to assistants (hidden when already on assistants) */}
         {!isOnAssistants && (
-          <RailButton
+          <RailLink
             icon={<LayoutGrid size={18} />}
             label="Assistants"
-            onClick={() => router.push("/assistants")}
+            href="/assistants"
           />
         )}
 
@@ -53,17 +54,17 @@ export function IconRail() {
 
         {/* Footer icons */}
         {user?.is_admin && (
-          <RailButton
+          <RailLink
             icon={<ShieldCheck size={18} />}
             label="Admin"
-            onClick={() => router.push("/admin")}
+            href="/admin"
             active={pathname.startsWith("/admin")}
           />
         )}
-        <RailButton
+        <RailLink
           icon={<User size={18} />}
           label="Profile"
-          onClick={() => router.push("/profile")}
+          href="/profile"
           active={pathname.startsWith("/profile")}
         />
         <RailButton
@@ -81,6 +82,16 @@ export function IconRail() {
     </TooltipProvider>
   )
 }
+
+const railButtonClass = (active?: boolean, danger?: boolean) =>
+  cn(
+    "w-10 h-10 rounded-md flex items-center justify-center transition-colors cursor-pointer no-underline",
+    active
+      ? "text-[#2a9d8f] bg-[#2a9d8f]/10"
+      : danger
+        ? "text-foreground/70 hover:text-red-400 hover:bg-red-400/15"
+        : "text-foreground/80 hover:text-white hover:bg-white/10"
+  )
 
 function RailButton({
   icon,
@@ -100,14 +111,35 @@ function RailButton({
       <TooltipTrigger
         type="button"
         onClick={onClick}
-        className={cn(
-          "w-10 h-10 rounded-md flex items-center justify-center transition-colors cursor-pointer",
-          active
-            ? "text-[#2a9d8f] bg-[#2a9d8f]/10"
-            : danger
-              ? "text-foreground/70 hover:text-red-400 hover:bg-red-400/15"
-              : "text-foreground/80 hover:text-white hover:bg-white/10"
-        )}
+        className={railButtonClass(active, danger)}
+      >
+        {icon}
+      </TooltipTrigger>
+      <TooltipContent side="right" className="text-xs">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function RailLink({
+  icon,
+  label,
+  href,
+  active,
+}: {
+  icon: React.ReactNode
+  label: string
+  href: Route
+  active?: boolean
+}) {
+  return (
+    <Tooltip>
+      {/* Base UI render prop: TooltipTrigger merges its ARIA/ref/handlers
+          onto the provided <Link>, so middle-click + prefetch work natively. */}
+      <TooltipTrigger
+        render={<Link href={href} />}
+        className={railButtonClass(active)}
       >
         {icon}
       </TooltipTrigger>

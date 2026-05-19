@@ -11,6 +11,7 @@ from typing import Annotated, Any, cast
 from langchain.agents.middleware import ModelRequest, ModelResponse, wrap_model_call
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import SystemMessage
 
 
 @dataclass(kw_only=True)
@@ -24,6 +25,17 @@ class Context:
     )
     model_base_url: Annotated[
         str | None, {"description": "Optional base URL for Ollama or proxy servers."}
+    ] = field(default=None)
+    # Per-assistant discriminator written by the create form to bypass Aegra's
+    # UNIQUE (user_id, graph_id, config) index. Read nowhere at runtime — only
+    # declared here so the dataclass accepts it when LangGraph builds context
+    # from the assistant's stored config.configurable.
+    client_id: str | None = field(default=None)
+    # Overrides the graph's static system_prompt at runtime. Applied by the
+    # dynamic_system_prompt middleware below.
+    system_prompt: Annotated[
+        str | None,
+        {"description": "Optional system prompt that overrides the graph default."},
     ] = field(default=None)
 
     def __post_init__(self) -> None:
@@ -81,3 +93,27 @@ async def configurable_model(
         )
     model = _load(ctx.model, getattr(ctx, "model_base_url", None))
     return await handler(request.override(model=model))
+
+
+@wrap_model_call  # type: ignore[arg-type]
+async def dynamic_system_prompt(
+    request: ModelRequest,
+    handler: Callable[[ModelRequest], ModelResponse],
+) -> ModelResponse:
+    """Override the graph's static system_prompt with the assistant's, if any.
+
+    Assistants are configured per-user in the UI; their ``context.system_prompt``
+    flows in via ``config.configurable.system_prompt``. When set, we replace the
+    request's ``system_message`` for this call only — state isn't mutated.
+
+    Documented pattern: https://docs.langchain.com/oss/python/langchain/middleware/custom#dynamic-prompt
+    """
+    ctx = request.runtime.context
+    prompt = getattr(ctx, "system_prompt", None) if ctx else None
+    if prompt:
+        return await handler(
+            request.override(system_message=SystemMessage(content=prompt))
+        )
+    # mypy: the typed Callable[[ModelRequest], ModelResponse] hides the fact
+    # that the wrap_model_call adapter returns an awaitable in async mode.
+    return await handler(request)  # type: ignore[misc, no-any-return]

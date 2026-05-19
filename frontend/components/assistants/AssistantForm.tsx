@@ -68,11 +68,23 @@ export function AssistantForm({ open, onClose, assistant }: AssistantFormProps) 
   const selectedIconLabel = ASSISTANT_ICONS.find((i) => i.key === selectedIconKey)?.label ?? "Sparkles"
 
   async function onSubmit(data: FormData) {
+    // Aegra enforces a UNIQUE (user_id, graph_id, config) index. Without a
+    // discriminator, two assistants of the same graph type with the same
+    // system_prompt (or both empty) collide with 409. We stamp a per-assistant
+    // uuid as context.client_id — generated on create, preserved on edit so
+    // the row's identity stays stable and edits don't collide with siblings.
+    const existingClientId =
+      typeof assistant?.context?.["client_id"] === "string"
+        ? (assistant.context["client_id"] as string)
+        : undefined
+    const clientId = existingClientId ?? crypto.randomUUID()
+
     const payload = {
       name: data.name,
       description: data.description || undefined,
       graph_id: data.graph_id,
       context: {
+        client_id: clientId,
         ...(data.system_prompt ? { system_prompt: data.system_prompt } : {}),
       },
       metadata: { icon: data.icon ?? DEFAULT_ICON_KEY },

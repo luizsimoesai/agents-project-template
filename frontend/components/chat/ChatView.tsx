@@ -1,5 +1,6 @@
 "use client"
 
+import type { Route } from "next"
 import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useStream } from "@langchain/langgraph-sdk/react"
@@ -100,7 +101,8 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
         ? { config: { configurable: { model: initialModel, model_base_url: initialModelBaseUrl ?? null } } }
         : undefined
     )
-    router.replace(window.location.pathname, { scroll: false })
+    // typedRoutes: current location is a runtime string, so cast to Route.
+    router.replace(window.location.pathname as Route, { scroll: false })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // After the first AI response lands, name the thread from the first human message

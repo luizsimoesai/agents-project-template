@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Pencil, Trash2, Plus } from "lucide-react"
 
@@ -24,7 +24,6 @@ import { useAuthStore } from "@/lib/store/auth"
 import { getGraphType } from "@/lib/graph-types"
 
 export default function AssistantPickerPage() {
-  const router = useRouter()
   const { data: assistants, isLoading } = useAssistants()
   const deleteAssistant = useDeleteAssistant()
   const user = useAuthStore((s) => s.user)
@@ -75,24 +74,20 @@ export default function AssistantPickerPage() {
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
             {assistants?.map((a) => (
-              <div
+              <Link
                 key={a.assistant_id}
-                role="button"
-                tabIndex={0}
+                href={`/assistants/${a.assistant_id}/threads`}
                 aria-label={`Select ${a.name}`}
-                onClick={() => router.push(`/assistants/${a.assistant_id}/threads`)}
-                onKeyDown={(e) =>
-                  e.key === "Enter" &&
-                  router.push(`/assistants/${a.assistant_id}/threads`)
-                }
-                className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-40 flex flex-col"
+                className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-40 flex flex-col no-underline text-inherit"
               >
-                {/* Edit / delete — appear on hover */}
+                {/* Edit / delete — appear on hover.
+                    preventDefault stops the parent <Link>'s navigation when
+                    these inline actions fire. */}
                 <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
                     aria-label="Edit assistant"
-                    onClick={(e) => { e.stopPropagation(); openEdit(a) }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(a) }}
                     className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent"
                   >
                     <Pencil size={15} />
@@ -100,7 +95,7 @@ export default function AssistantPickerPage() {
                   <button
                     type="button"
                     aria-label="Delete assistant"
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(a) }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget(a) }}
                     className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 size={15} />
@@ -135,7 +130,7 @@ export default function AssistantPickerPage() {
                 <span className="text-[11px] text-accent font-medium">
                   {getGraphType(a.graph_id)?.label ?? a.graph_id}
                 </span>
-              </div>
+              </Link>
             ))}
 
             {/* New assistant card */}

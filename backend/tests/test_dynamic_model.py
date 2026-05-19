@@ -4,8 +4,15 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+from langchain_core.messages import SystemMessage
 
-from src.agent.model import Context, _load, _split_provider, configurable_model
+from src.agent.model import (
+    Context,
+    _load,
+    _split_provider,
+    configurable_model,
+    dynamic_system_prompt,
+)
 
 # ---------------------------------------------------------------------------
 # _split_provider — accepts both "provider/model" and "provider:model"
@@ -170,3 +177,56 @@ class TestConfigurableModel:
 
         with pytest.raises(ValueError, match="No model configured"):
             await configurable_model.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# dynamic_system_prompt — overrides system_message when ctx.system_prompt set
+# ---------------------------------------------------------------------------
+
+
+def _request_with_prompt(prompt: str | None):
+    """Build a ModelRequest stub whose runtime.context exposes system_prompt."""
+    ctx = Context(model="openai/gpt-4o", system_prompt=prompt)
+    request = MagicMock()
+    request.runtime = SimpleNamespace(context=ctx)
+    overridden = MagicMock(name="overridden_request")
+    request.override = MagicMock(return_value=overridden)
+    return request, overridden
+
+
+class TestDynamicSystemPrompt:
+    async def test_overrides_system_message_when_set(self) -> None:
+        request, overridden = _request_with_prompt("Respond in haiku.")
+        captured: dict[str, object] = {}
+
+        async def fake_handler(req):
+            captured["req"] = req
+            return MagicMock(name="response")
+
+        await dynamic_system_prompt.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+
+        request.override.assert_called_once()
+        kwargs = request.override.call_args.kwargs
+        assert isinstance(kwargs["system_message"], SystemMessage)
+        assert kwargs["system_message"].content == "Respond in haiku."
+        assert captured["req"] is overridden
+
+    async def test_no_override_when_prompt_absent(self) -> None:
+        request, _ = _request_with_prompt(None)
+
+        async def fake_handler(req):
+            assert req is request  # passthrough — no override
+            return MagicMock()
+
+        await dynamic_system_prompt.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+        request.override.assert_not_called()
+
+    async def test_no_override_when_prompt_empty(self) -> None:
+        request, _ = _request_with_prompt("")
+
+        async def fake_handler(req):
+            assert req is request
+            return MagicMock()
+
+        await dynamic_system_prompt.awrap_model_call(request, fake_handler)  # type: ignore[attr-defined]
+        request.override.assert_not_called()

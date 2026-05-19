@@ -1,5 +1,6 @@
 "use client"
 
+import type { Route } from "next"
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useCreateThread } from "@/lib/hooks/useThreads"
@@ -22,8 +23,7 @@ function greeting(name: string | null | undefined): string {
 
 export default function ThreadsListPage() {
   const router = useRouter()
-  const params = useParams()
-  const assistantId = params.id as string
+  const { id: assistantId } = useParams<{ id: string }>()
   const createThread = useCreateThread()
   const user = useAuthStore((s) => s.user)
   const { data: models } = useModels()
@@ -52,12 +52,13 @@ export default function ThreadsListPage() {
     url.searchParams.set("msg", message)
     if (selectedModelId) url.searchParams.set("model", selectedModelId)
     if (selectedModel?.base_url) url.searchParams.set("model_base_url", selectedModel.base_url)
-    router.replace(url.pathname + url.search)
+    // typedRoutes: this href is built at runtime, so cast to Route.
+    router.replace((url.pathname + url.search) as Route)
   }
 
   return (
     <div className="flex flex-col h-full items-center justify-center px-6">
-      <div className="w-full max-w-2xl flex flex-col gap-4">
+      <div className="w-full max-w-2xl flex flex-col gap-8">
         <h1 className="text-xl font-medium text-foreground/80 text-center">
           {greeting(user?.name)}
         </h1>
@@ -65,10 +66,10 @@ export default function ThreadsListPage() {
           <div className="flex justify-center">
             <Select value={selectedModelId} onValueChange={handleModelChange}>
               <SelectTrigger
-                className="h-7 text-xs font-mono border-border/60 bg-transparent w-auto p-0 pr-2 gap-0 overflow-hidden"
+                className="h-7 text-xs font-mono border-[#2a9d8f]/50 bg-transparent w-auto p-0 pr-2 gap-0 overflow-hidden hover:border-[#2a9d8f]/80 transition-colors"
                 aria-label={`Model: ${selectedModelId}`}
               >
-                <span className="px-2.5 h-full flex items-center bg-muted/60 border-r border-border/60 text-muted-foreground shrink-0">
+                <span className="px-2.5 h-full flex items-center bg-[#2a9d8f]/10 border-r border-[#2a9d8f]/30 text-[#2a9d8f]/80 shrink-0">
                   Model
                 </span>
                 <SelectValue placeholder="select model..." className="px-2 min-w-0" />

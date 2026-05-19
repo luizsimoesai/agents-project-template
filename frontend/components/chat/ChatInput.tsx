@@ -57,7 +57,7 @@ export function ChatInput({ onSubmit, onStop, isStreaming, disabled, centered, m
             placeholder="Message... (Enter to send)"
             disabled={disabled || isStreaming}
             className={cn(
-              "resize-none min-h-9 max-h-40 font-mono text-sm flex-1",
+              "resize-none min-h-12 max-h-40 font-mono text-sm flex-1",
               "border-0 shadow-none p-0 focus-visible:ring-0 bg-transparent"
             )}
             rows={1}

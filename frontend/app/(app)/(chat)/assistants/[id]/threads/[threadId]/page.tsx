@@ -6,10 +6,11 @@ import { ChatView } from "@/components/chat/ChatView"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ChatPage() {
-  const params = useParams()
+  const { id: assistantId, threadId } = useParams<{
+    id: string
+    threadId: string
+  }>()
   const searchParams = useSearchParams()
-  const assistantId = params.id as string
-  const threadId = params.threadId as string
   const initialMessage = searchParams.get("msg") ?? undefined
   const initialModel = searchParams.get("model") ?? undefined
   const initialModelBaseUrl = searchParams.get("model_base_url") ?? undefined

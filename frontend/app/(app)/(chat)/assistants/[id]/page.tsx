@@ -9,8 +9,7 @@ import { AssistantForm } from "@/components/assistants/AssistantForm"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AssistantDetailPage() {
-  const params = useParams()
-  const id = params.id as string
+  const { id } = useParams<{ id: string }>()
   const { data: assistants, isLoading } = useAssistants()
   const assistant = assistants?.find((a) => a.assistant_id === id)
   const [editOpen, setEditOpen] = useState(false)

@@ -45,13 +45,15 @@ def _stamp_owner(value: Any, identity: str) -> Any:
     return value
 
 
-def _owner_filter(ctx: Any) -> dict[str, str]:
-    """Return a metadata filter scoping reads to the authenticated owner.
+def _owner_filter(ctx: Any) -> dict[str, Any]:
+    """Return the metadata-scoped filter for the caller.
 
-    Aegra applies this filter to list/get/update/delete operations: only rows
-    whose metadata.owner equals the caller's identity are matched.
+    Use the **nested** form ``{"metadata": {"owner": identity}}``. Aegra's
+    list/search routes accept either flat (``{"owner": ...}``) or nested,
+    but create/update routes only merge from ``filters["metadata"]`` —
+    flat keys are silently dropped there. Nested works in every route.
     """
-    return {"owner": ctx.user.identity}
+    return {"metadata": {"owner": ctx.user.identity}}
 
 
 @auth.authenticate
@@ -142,45 +144,53 @@ async def set_thread_owner(ctx: Any, value: Any) -> Any:
 
 
 @auth.on.threads.read
-async def _threads_read(ctx: Any, value: Any) -> dict[str, str]:
+async def _threads_read(ctx: Any, value: Any) -> dict[str, Any]:
     return _owner_filter(ctx)
 
 
 @auth.on.threads.update
-async def _threads_update(ctx: Any, value: Any) -> dict[str, str]:
+async def _threads_update(ctx: Any, value: Any) -> dict[str, Any]:
+    # Stamp owner on the value too — Aegra's update route writes the request's
+    # metadata column wholesale, so if the client omits owner it disappears
+    # and the next read filter no longer matches.
+    _stamp_owner(value, ctx.user.identity)
     return _owner_filter(ctx)
 
 
 @auth.on.threads.delete
-async def _threads_delete(ctx: Any, value: Any) -> dict[str, str]:
+async def _threads_delete(ctx: Any, value: Any) -> dict[str, Any]:
     return _owner_filter(ctx)
 
 
 @auth.on.threads.search
-async def _threads_search(ctx: Any, value: Any) -> dict[str, str]:
+async def _threads_search(ctx: Any, value: Any) -> dict[str, Any]:
     return _owner_filter(ctx)
 
 
 @auth.on.assistants.read
-async def _assistants_read(ctx: Any, value: Any) -> dict[str, str]:
+async def _assistants_read(ctx: Any, value: Any) -> dict[str, Any]:
     return _owner_filter(ctx)
 
 
 @auth.on.assistants.update
-async def _assistants_update(ctx: Any, value: Any) -> dict[str, str]:
+async def _assistants_update(ctx: Any, value: Any) -> dict[str, Any]:
+    # Same as threads.update: Aegra overwrites metadata wholesale on PATCH.
+    # Without stamping, the owner key disappears and the row vanishes from
+    # subsequent reads (metadata @> {owner: ...} no longer matches).
+    _stamp_owner(value, ctx.user.identity)
     return _owner_filter(ctx)
 
 
 @auth.on.assistants.delete
-async def _assistants_delete(ctx: Any, value: Any) -> dict[str, str]:
+async def _assistants_delete(ctx: Any, value: Any) -> dict[str, Any]:
     return _owner_filter(ctx)
 
 
 @auth.on.assistants.search
-async def _assistants_search(ctx: Any, value: Any) -> dict[str, str]:
+async def _assistants_search(ctx: Any, value: Any) -> dict[str, Any]:
     return _owner_filter(ctx)
 
 
 @auth.on.threads.create_run
-async def _threads_create_run(ctx: Any, value: Any) -> dict[str, str]:
+async def _threads_create_run(ctx: Any, value: Any) -> dict[str, Any]:
     return _owner_filter(ctx)
