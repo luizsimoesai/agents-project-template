@@ -23,7 +23,7 @@ export function ModelPicker({ models, value, onChange, compact, disabled }: Mode
   if (!models.length) return null
 
   return (
-    <Select value={value} onValueChange={(v: string) => onChange(v)} disabled={disabled}>
+    <Select value={value} onValueChange={(v) => { if (v != null) onChange(v) }} disabled={disabled}>
       <SelectTrigger
         className={cn(
           "font-mono text-xs bg-transparent w-auto p-0 gap-0 overflow-hidden transition-colors",
