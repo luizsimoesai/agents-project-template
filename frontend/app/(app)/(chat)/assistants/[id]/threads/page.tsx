@@ -7,13 +7,7 @@ import { useCreateThread } from "@/lib/hooks/useThreads"
 import { useModels } from "@/lib/hooks/useModels"
 import { useAuthStore } from "@/lib/store/auth"
 import { ChatInput } from "@/components/chat/ChatInput"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { ModelPicker } from "@/components/chat/ModelPicker"
 
 function greeting(name: string | null | undefined): string {
   const hour = new Date().getHours()
@@ -64,24 +58,11 @@ export default function ThreadsListPage() {
         </h1>
         {models && models.length > 0 && selectedModelId && (
           <div className="flex justify-center">
-            <Select value={selectedModelId} onValueChange={handleModelChange}>
-              <SelectTrigger
-                className="h-7 text-xs font-mono border-[#2a9d8f]/50 bg-transparent w-auto p-0 pr-2 gap-0 overflow-hidden hover:border-[#2a9d8f]/80 transition-colors"
-                aria-label={`Model: ${selectedModelId}`}
-              >
-                <span className="px-2.5 h-full flex items-center bg-[#2a9d8f]/10 border-r border-[#2a9d8f]/30 text-[#2a9d8f]/80 shrink-0">
-                  Model
-                </span>
-                <SelectValue placeholder="select model..." className="px-2 min-w-0" />
-              </SelectTrigger>
-              <SelectContent>
-                {models.map((m) => (
-                  <SelectItem key={m.model_id} value={m.model_id} className="font-mono text-xs">
-                    {m.model_id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ModelPicker
+              models={models}
+              value={selectedModelId}
+              onChange={(id) => handleModelChange(id)}
+            />
           </div>
         )}
         <ChatInput

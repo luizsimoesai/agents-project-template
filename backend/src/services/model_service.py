@@ -29,17 +29,21 @@ class ModelService:
     async def _set_default(self, model_id: uuid.UUID) -> ModelRead:
         """Clear is_default on all models, then set it on the given model.
 
-        Both UPDATEs run inside a single ``session.begin()`` block so they
-        commit together — if the second statement fails, the first is rolled
-        back and the system never ends up with zero default models.
+        Both UPDATEs run in the session's autobegun transaction and are
+        committed together — if the second statement raises, the first is
+        never committed and the system stays consistent. We deliberately
+        DON'T open ``async with session.begin()`` here: callers may have
+        already touched the session (e.g. ``refresh()`` after ``commit()``),
+        which autobegins a transaction; opening a nested one raises
+        ``InvalidRequestError: A transaction is already begun on this Session``.
         """
-        async with self.session.begin():
-            await self.session.execute(update(LLMModel).values(is_default=False))
-            await self.session.execute(
-                update(LLMModel)
-                .where(LLMModel.id == model_id)
-                .values(is_default=True)
-            )
+        await self.session.execute(update(LLMModel).values(is_default=False))
+        await self.session.execute(
+            update(LLMModel)
+            .where(LLMModel.id == model_id)
+            .values(is_default=True)
+        )
+        await self.session.commit()
         read = await self.get_model(model_id)
         # The UPDATE sets is_default=True in the DB; reflect this in the returned
         # schema even if the ORM object is still cached in the session.

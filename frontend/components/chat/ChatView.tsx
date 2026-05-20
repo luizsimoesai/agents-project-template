@@ -1,7 +1,7 @@
 "use client"
 
 import type { Route } from "next"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useStream } from "@langchain/langgraph-sdk/react"
 import { toast } from "sonner"
@@ -9,7 +9,13 @@ import { ChatMessage } from "./ChatMessage"
 import { ChatInput } from "./ChatInput"
 import { useAuthStore } from "@/lib/store/auth"
 import { API_URL } from "@/lib/api/client"
-import { useThreadState, useUpdateThreadName, useThread } from "@/lib/hooks/useThreads"
+import {
+  useThreadState,
+  useUpdateThreadName,
+  useThread,
+  useUpdateThreadModel,
+} from "@/lib/hooks/useThreads"
+import { useModels } from "@/lib/hooks/useModels"
 import type { Message, AIMessage, ToolMessage } from "@langchain/langgraph-sdk"
 import type { AssistantRead } from "@/lib/types"
 import type { RenderedToolCall } from "./ToolCallBadge"
@@ -37,7 +43,13 @@ function getMessageContent(msg: Message): string {
     .join("")
 }
 
-// Build RenderedToolCall list from historic messages (AIMessage + ToolMessages pairing)
+// AIMessage.additional_kwargs is loosely typed in the SDK; pull model_id safely.
+function getModelId(msg: Message): string | undefined {
+  const kwargs = (msg as { additional_kwargs?: Record<string, unknown> }).additional_kwargs
+  const v = kwargs?.model_id
+  return typeof v === "string" ? v : undefined
+}
+
 function buildHistoricToolCalls(
   aiMsg: AIMessage,
   allMessages: Message[]
@@ -56,25 +68,72 @@ function buildHistoricToolCalls(
       name: call.name,
       args: (call.args ?? {}) as Record<string, unknown>,
       state: toolMsg ? "completed" : "pending",
-      result: toolMsg ? (typeof toolMsg.content === "string" ? toolMsg.content : JSON.stringify(toolMsg.content)) : undefined,
+      result: toolMsg
+        ? typeof toolMsg.content === "string"
+          ? toolMsg.content
+          : JSON.stringify(toolMsg.content)
+        : undefined,
     } satisfies RenderedToolCall
   })
 }
 
-export function ChatView({ threadId, assistant, initialMessage, initialModel, initialModelBaseUrl }: ChatViewProps) {
+export function ChatView({
+  threadId,
+  assistant,
+  initialMessage,
+  initialModel,
+  initialModelBaseUrl,
+}: ChatViewProps) {
   const accessToken = useAuthStore((s) => s.accessToken)
   const bottomRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const initialMessageSent = useRef(false)
   const threadNameSet = useRef(false)
   const updateThreadName = useUpdateThreadName()
+  const updateThreadModel = useUpdateThreadModel()
 
   const { data: historicMessages } = useThreadState(threadId)
   const { data: thread } = useThread(threadId)
-  // Model for this thread: prefer saved metadata, fall back to initialModel from URL
-  const threadModel = (thread?.metadata?.thread_model as string | undefined) || initialModel || undefined
-  const threadModelBaseUrl = (thread?.metadata?.thread_model_base_url as string | null | undefined) ?? null
-  const modelLabel = threadModel
+  const { data: models } = useModels()
+
+  // selectedModelId is the source of truth for the *next* submit().
+  // Initialized from thread metadata; falls back to initialModel from URL.
+  const [selectedModelId, setSelectedModelId] = useState<string>("")
+  const [selectedModelBaseUrl, setSelectedModelBaseUrl] = useState<string | null>(null)
+  const modelInitialized = useRef(false)
+
+  useEffect(() => {
+    if (modelInitialized.current) return
+    const fromMeta = thread?.metadata?.thread_model as string | undefined
+    const fromMetaBaseUrl =
+      (thread?.metadata?.thread_model_base_url as string | null | undefined) ?? null
+    const seed = fromMeta ?? initialModel ?? ""
+    const seedBaseUrl = fromMeta ? fromMetaBaseUrl : (initialModelBaseUrl ?? null)
+    if (seed) {
+      setSelectedModelId(seed)
+      setSelectedModelBaseUrl(seedBaseUrl)
+      modelInitialized.current = true
+    }
+  }, [thread, initialModel, initialModelBaseUrl])
+
+  function handleModelChange(modelId: string) {
+    const previous = { id: selectedModelId, baseUrl: selectedModelBaseUrl }
+    const next = models?.find((m) => m.model_id === modelId)
+    const baseUrl = next?.base_url ?? null
+    setSelectedModelId(modelId)
+    setSelectedModelBaseUrl(baseUrl)
+    updateThreadModel.mutate(
+      { id: threadId, modelId, baseUrl },
+      {
+        onError: (err) => {
+          setSelectedModelId(previous.id)
+          setSelectedModelBaseUrl(previous.baseUrl)
+          const detail = err instanceof Error ? err.message : "Failed to persist model"
+          toast.error(detail)
+        },
+      }
+    )
+  }
 
   const { messages, submit, isLoading: isStreaming, stop } = useStream<{
     messages: Array<{ role: string; content: string }>
@@ -95,20 +154,30 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
   useEffect(() => {
     if (!initialMessage || initialMessageSent.current) return
     initialMessageSent.current = true
+    const modelForFirst = initialModel ?? selectedModelId
     submit(
       { messages: [{ role: "human", content: initialMessage }] },
-      initialModel
-        ? { config: { configurable: { model: initialModel, model_base_url: initialModelBaseUrl ?? null } } }
+      modelForFirst
+        ? {
+            config: {
+              configurable: {
+                model: modelForFirst,
+                model_base_url: initialModelBaseUrl ?? selectedModelBaseUrl ?? null,
+              },
+            },
+          }
         : undefined
     )
-    // typedRoutes: current location is a runtime string, so cast to Route.
     router.replace(window.location.pathname as Route, { scroll: false })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // After the first AI response lands, name the thread from the first human message
   useEffect(() => {
     if (isStreaming || threadNameSet.current) return
-    const msgs = streamMessages.length > 0 ? streamMessages : (historicMessages ?? []) as Message[]
+    const msgs =
+      streamMessages.length > 0
+        ? streamMessages
+        : ((historicMessages ?? []) as Message[])
     const humanMsg = msgs.find((m) => getMessageRole(m) === "human")
     const aiMsg = msgs.find((m) => getMessageRole(m) === "ai" || getMessageRole(m) === "assistant")
     if (!humanMsg || !aiMsg) return
@@ -126,8 +195,15 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
   function handleSubmit(content: string) {
     submit(
       { messages: [{ role: "human", content }] },
-      threadModel
-        ? { config: { configurable: { model: threadModel, model_base_url: threadModelBaseUrl } } }
+      selectedModelId
+        ? {
+            config: {
+              configurable: {
+                model: selectedModelId,
+                model_base_url: selectedModelBaseUrl,
+              },
+            },
+          }
         : undefined
     )
   }
@@ -136,8 +212,13 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
   const historic = (historicMessages ?? []) as Message[]
   const usingStream = streamMessages.length > 0
 
-  // Build display items: skip tool messages (shown inline with their AI message)
-  type DisplayItem = { role: string; content: string; toolCalls: RenderedToolCall[]; isLast: boolean }
+  type DisplayItem = {
+    role: string
+    content: string
+    toolCalls: RenderedToolCall[]
+    isLast: boolean
+    modelId?: string
+  }
 
   const displayItems: DisplayItem[] = (() => {
     const source = usingStream ? streamMessages : historic
@@ -145,16 +226,15 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
 
     return visible.map((msg, i) => {
       let toolCalls: RenderedToolCall[] = []
-
       if (msg.type === "ai") {
         toolCalls = buildHistoricToolCalls(msg as AIMessage, source)
       }
-
       return {
         role: getMessageRole(msg),
         content: getMessageContent(msg),
         toolCalls,
         isLast: i === visible.length - 1,
+        modelId: getModelId(msg),
       }
     })
   })()
@@ -173,6 +253,7 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
               role={item.role}
               content={item.content}
               toolCalls={item.toolCalls}
+              modelId={item.modelId}
               isStreaming={
                 isStreaming &&
                 item.isLast &&
@@ -184,12 +265,14 @@ export function ChatView({ threadId, assistant, initialMessage, initialModel, in
         <div ref={bottomRef} />
       </div>
 
-        <ChatInput
-          onSubmit={handleSubmit}
-          onStop={stop}
-          isStreaming={isStreaming}
-          modelLabel={modelLabel}
-        />
+      <ChatInput
+        onSubmit={handleSubmit}
+        onStop={stop}
+        isStreaming={isStreaming}
+        models={models}
+        selectedModelId={selectedModelId}
+        onModelChange={handleModelChange}
+      />
     </div>
   )
 }
