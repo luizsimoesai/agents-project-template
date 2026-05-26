@@ -18,9 +18,11 @@ dependencies = [
     "bcrypt>=4.0.0",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.22",
+    "pyyaml>=6.0",
     "email-validator>=2.3.0",
     "deepagents>=0.5.9",
     "langchain-openrouter>=0.2.3",
+    "rich>=14.0.0",
     "slowapi>=0.1.9",
 ]
 
@@ -73,6 +75,7 @@ ignore_errors = true
 lint = 'ruff check && mypy .'
 format = 'ruff format'
 run = 'uv run aegra dev'
+bootstrap = 'uv run python -m src.cli.bootstrap'
 pre_test = 'task lint'
 test = 'pytest -s -x --cov=src -vv'
 post_test = 'coverage html'

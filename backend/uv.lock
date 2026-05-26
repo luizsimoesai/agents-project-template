@@ -231,6 +231,8 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "python-jose", extra = ["cryptography"] },
     { name = "python-multipart" },
+    { name = "pyyaml" },
+    { name = "rich" },
     { name = "slowapi" },
     { name = "sqlalchemy" },
 ]
@@ -263,6 +265,8 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "python-jose", extras = ["cryptography"], specifier = ">=3.5.0" },
     { name = "python-multipart", specifier = ">=0.0.22" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rich", specifier = ">=14.0.0" },
     { name = "slowapi", specifier = ">=0.1.9" },
     { name = "sqlalchemy", specifier = ">=2.0.48" },
 ]
