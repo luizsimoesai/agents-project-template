@@ -7,6 +7,8 @@ for the full design.
 from __future__ import annotations
 
 import secrets
+import subprocess
+import time
 from pathlib import Path
 
 import yaml
@@ -285,3 +287,87 @@ def step_llm_keys(
             console.print(f"      [green]✓[/] Saved {var} from environment")
     if updates:
         update_env_file(env_path, updates)
+
+
+_POSTGRES_HEALTH_TIMEOUT_SECS = 60
+_POSTGRES_POLL_INTERVAL_SECS = 2
+
+
+def _postgres_health() -> str:
+    """Return the container's Health value (e.g. 'healthy', 'starting', '')."""
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "compose",
+                "ps",
+                "postgres",
+                "--format",
+                "{{.Health}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError as err:
+        raise RuntimeError(
+            "Docker daemon not reachable. Start Docker Desktop and re-run."
+        ) from err
+    return result.stdout.strip().lower()
+
+
+def step_postgres(*, console: Console | None = None) -> None:
+    """Step 5/8: ensure the Postgres container is running and healthy."""
+    console = console or Console()
+    console.print("[bold cyan][5/8][/] PostgreSQL container")
+    if _postgres_health() == "healthy":
+        console.print("      [dim]✓ already healthy, skipping[/]")
+        return
+    console.print("      ⟳ Starting postgres via docker compose...")
+    subprocess.run(
+        ["docker", "compose", "up", "postgres", "-d"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    deadline = time.monotonic() + _POSTGRES_HEALTH_TIMEOUT_SECS
+    while time.monotonic() < deadline:
+        if _postgres_health() == "healthy":
+            console.print("      [green]✓[/] Postgres is healthy on :5432")
+            return
+        time.sleep(_POSTGRES_POLL_INTERVAL_SECS)
+    raise RuntimeError(
+        "Postgres did not become healthy in 60s. "
+        "Check 'docker compose logs postgres'."
+    )
+
+
+def step_migrations(*, console: Console | None = None) -> None:
+    """Step 6/8: run alembic upgrade head if not already at head."""
+    console = console or Console()
+    console.print("[bold cyan][6/8][/] Database migrations")
+    current = subprocess.run(
+        ["uv", "run", "alembic", "current"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    heads = subprocess.run(
+        ["uv", "run", "alembic", "heads"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    # `alembic current` prints "<rev> (head)" when at head; compare the
+    # first whitespace-delimited token on each side for a robust check.
+    current_rev = current.split()[0] if current else ""
+    heads_rev = heads.split()[0] if heads else ""
+    if current_rev and current_rev == heads_rev:
+        console.print("      [dim]✓ schema up to date, skipping[/]")
+        return
+    console.print("      ⟳ Running alembic upgrade head...")
+    subprocess.run(
+        ["uv", "run", "alembic", "upgrade", "head"],
+        check=True,
+    )
+    console.print("      [green]✓[/] Schema up to date")
