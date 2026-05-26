@@ -11,7 +11,7 @@ from pathlib import Path
 
 import yaml
 from rich.console import Console
-from rich.prompt import Prompt
+from rich.prompt import Confirm, Prompt
 
 _PLACEHOLDER_VALUES = frozenset({"", "...", "sk-...", "pk-...", "your-key-here"})
 
@@ -233,3 +233,55 @@ def step_db_password(
         value = env_value
     update_env_file(env_path, {"POSTGRES_PASSWORD": value})
     console.print("      [green]✓[/] Saved to .env")
+
+
+_PROVIDER_DISPLAY = {
+    "anthropic": ("Anthropic", "ANTHROPIC_API_KEY"),
+    "openai": ("OpenAI", "OPENAI_API_KEY"),
+    "openrouter": ("OpenRouter", "OPENROUTER_API_KEY"),
+}
+
+
+def step_llm_keys(
+    *,
+    env_path: Path,
+    interactive: bool,
+    env_values: dict[str, str],
+    console: Console | None = None,
+) -> None:
+    """Step 4/8: collect LLM provider API keys.
+
+    For each provider whose key is missing or placeholder in ``.env``:
+
+    * Interactive: ask Yes/No, then prompt for the key (hidden).
+    * Non-interactive: write the value from ``env_values`` if present and
+      non-placeholder; otherwise skip silently.
+
+    Already-configured providers are skipped in both modes.
+    """
+    console = console or Console()
+    console.print("[bold cyan][4/8][/] LLM provider keys")
+    current = parse_env_file(env_path)
+    updates: dict[str, str] = {}
+    for _provider, (label, var) in _PROVIDER_DISPLAY.items():
+        if not is_placeholder(current.get(var, "")):
+            console.print(f"      [dim]✓ {label}: already configured, skipping[/]")
+            continue
+        if interactive:
+            wants = Confirm.ask(
+                f"      ? Do you have a {label} API key?", default=False
+            )
+            if not wants:
+                console.print(f"      [dim]Skipped {label}[/]")
+                continue
+            value = Prompt.ask(f"      ? Paste your {label} key", password=True)
+            updates[var] = value
+            console.print(f"      [green]✓[/] Saved {var}")
+        else:
+            value = env_values.get(var, "")
+            if is_placeholder(value):
+                continue
+            updates[var] = value
+            console.print(f"      [green]✓[/] Saved {var} from environment")
+    if updates:
+        update_env_file(env_path, updates)
