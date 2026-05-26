@@ -1,0 +1,35 @@
+# Curated LLM catalogue used by `task bootstrap`.
+#
+# Wizard inserts only entries whose `provider` matches a configured API key.
+# Ollama is always included (no API key required).
+#
+# `is_default: true` is allowed on AT MOST ONE entry (validated at load time).
+# If the default-marked entry's provider is not configured, the wizard
+# promotes the first surviving entry to default and prints a warning.
+
+models:
+  - display_name: "Claude Sonnet 4.6"
+    model_id: "anthropic:claude-sonnet-4-6"
+    provider: "anthropic"
+    description: "Anthropic's flagship balanced reasoning model"
+    is_default: true
+
+  - display_name: "Claude Haiku 4.5"
+    model_id: "anthropic:claude-haiku-4-5"
+    provider: "anthropic"
+    description: "Faster, cheaper Claude for high-volume workloads"
+
+  - display_name: "GPT-4o"
+    model_id: "openai:gpt-4o"
+    provider: "openai"
+    description: "OpenAI's flagship multimodal model"
+
+  - display_name: "GPT-4o mini"
+    model_id: "openai:gpt-4o-mini"
+    provider: "openai"
+    description: "Affordable, fast OpenAI option"
+
+  - display_name: "Llama 3.2 (local)"
+    model_id: "ollama:llama3.2"
+    provider: "ollama"
+    description: "Local Llama via Ollama — no API key required"
