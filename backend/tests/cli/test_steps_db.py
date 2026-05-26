@@ -1,13 +1,14 @@
 """Tests for the async DB steps: step_admin + step_seed_models."""
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.cli.bootstrap import step_admin, step_seed_models  # noqa: F401
-from src.models.llm_model import LLMModel  # noqa: F401
+from src.cli.bootstrap import step_admin, step_seed_models
+from src.models.llm_model import LLMModel
 from src.models.user import User
 
 
@@ -120,3 +121,120 @@ async def test_step_admin_interactive_loops_on_mismatch(session: AsyncMock) -> N
         )
     added = session.add.call_args.args[0]
     assert added.email == "a@b.c"
+
+
+async def test_step_seed_models_inserts_filtered_entries(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text(
+        """
+models:
+  - display_name: A
+    model_id: anthropic:a
+    provider: anthropic
+    is_default: true
+  - display_name: B
+    model_id: openai:b
+    provider: openai
+""",
+    )
+    # No existing models in DB.
+    existing_result = MagicMock()
+    existing_result.all.return_value = []
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers={"anthropic"},
+    )
+    # Only the anthropic entry should be inserted.
+    assert session.add.call_count == 1
+    added = session.add.call_args.args[0]
+    assert isinstance(added, LLMModel)
+    assert added.model_id == "anthropic:a"
+    assert added.is_default is True
+    session.commit.assert_awaited_once()
+
+
+async def test_step_seed_models_skips_when_all_present(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text(
+        """
+models:
+  - display_name: A
+    model_id: anthropic:a
+    provider: anthropic
+""",
+    )
+    # DB already contains anthropic:a.
+    existing_result = MagicMock()
+    existing_result.all.return_value = [("anthropic:a",)]
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers={"anthropic"},
+    )
+    session.add.assert_not_called()
+
+
+async def test_step_seed_models_no_providers_no_op(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text(
+        """
+models:
+  - display_name: A
+    model_id: anthropic:a
+    provider: anthropic
+""",
+    )
+    existing_result = MagicMock()
+    existing_result.all.return_value = []
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers=set(),
+    )
+    session.add.assert_not_called()
+    session.commit.assert_not_called()
+
+
+async def test_step_seed_models_promotes_default(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    """When the YAML's default-marked entry's provider is unavailable,
+    the first surviving entry must be inserted with is_default=True."""
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text(
+        """
+models:
+  - display_name: A
+    model_id: anthropic:a
+    provider: anthropic
+    is_default: true
+  - display_name: B
+    model_id: openai:b
+    provider: openai
+""",
+    )
+    existing_result = MagicMock()
+    existing_result.all.return_value = []
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers={"openai"},
+    )
+    added = session.add.call_args.args[0]
+    assert added.model_id == "openai:b"
+    assert added.is_default is True

@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import _hash_password
+from src.models.llm_model import LLMModel
 from src.models.user import User
 
 _PLACEHOLDER_VALUES = frozenset({"", "...", "sk-...", "pk-...", "your-key-here"})
@@ -447,6 +448,52 @@ def _prompt_admin_password(console: Console) -> str:
         return pw
 
 
-async def step_seed_models(*args, **kwargs) -> None:  # type: ignore[misc]
-    """Placeholder — implemented in Task 12."""
-    raise NotImplementedError
+async def step_seed_models(
+    *,
+    session: AsyncSession,
+    seeds_path: Path,
+    providers: set[str],
+    console: Console | None = None,
+) -> None:
+    """Step 8/8: insert LLM models filtered by ``providers``.
+
+    Idempotent: entries already present (matched by ``model_id``) are
+    skipped silently. At most one inserted entry has ``is_default=True``
+    (guaranteed by :func:`filter_seeds_by_providers`).
+    """
+    console = console or Console()
+    console.print("[bold cyan][8/8][/] Seed LLM models")
+    catalogue = load_seed_catalogue(seeds_path)
+    filtered = filter_seeds_by_providers(catalogue, providers)
+    if not filtered:
+        console.print(
+            "      [yellow]No models match configured providers; skipping[/]"
+        )
+        return
+    existing_rows = (
+        await session.execute(select(LLMModel.model_id))
+    ).all()
+    existing = {row[0] for row in existing_rows}
+    inserted = 0
+    default_chosen: str | None = None
+    for entry in filtered:
+        if entry["model_id"] in existing:
+            continue
+        model = LLMModel(
+            display_name=entry["display_name"],
+            model_id=entry["model_id"],
+            provider=entry["provider"],
+            description=entry.get("description"),
+            is_default=bool(entry.get("is_default")),
+            is_active=True,
+        )
+        session.add(model)
+        inserted += 1
+        if model.is_default:
+            default_chosen = model.model_id
+    if inserted:
+        await session.commit()
+        suffix = f" · default: {default_chosen}" if default_chosen else ""
+        console.print(f"      [green]✓[/] Inserted {inserted} models{suffix}")
+    else:
+        console.print("      [dim]✓ all models already seeded, skipping[/]")
