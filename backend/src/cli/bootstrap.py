@@ -9,6 +9,8 @@ from __future__ import annotations
 import secrets
 from pathlib import Path
 
+import yaml
+
 _PLACEHOLDER_VALUES = frozenset({"", "...", "sk-...", "pk-...", "your-key-here"})
 
 _PROVIDER_KEY_ENV = {
@@ -126,3 +128,41 @@ def update_env_file(path: Path, updates: dict[str, str]) -> None:
             new_lines.append(f"{key}={value}\n")
 
     path.write_text("".join(new_lines))
+
+
+def load_seed_catalogue(path: Path) -> list[dict]:
+    """Load and validate the model seed catalogue.
+
+    Returns the list under the top-level ``models`` key (or ``[]`` if
+    missing). Raises ``ValueError`` if more than one entry has
+    ``is_default: true``.
+    """
+    data = yaml.safe_load(path.read_text()) or {}
+    models = data.get("models") or []
+    defaults = [m for m in models if m.get("is_default")]
+    if len(defaults) > 1:
+        raise ValueError(
+            f"models.yaml: at most one entry may have is_default: true; "
+            f"found {len(defaults)} ({', '.join(m['model_id'] for m in defaults)})"
+        )
+    return list(models)
+
+
+def filter_seeds_by_providers(
+    seeds: list[dict],
+    providers: set[str],
+) -> list[dict]:
+    """Keep entries whose ``provider`` is in ``providers``.
+
+    Guarantees that the returned list has exactly one ``is_default: True``
+    entry when non-empty: if the originally-defaulted entry was filtered
+    out, the first survivor is promoted. Original dicts are not mutated;
+    a shallow-copied dict is substituted when promotion is needed.
+    """
+    filtered = [m for m in seeds if m.get("provider") in providers]
+    if not filtered:
+        return []
+    if any(m.get("is_default") for m in filtered):
+        return filtered
+    promoted = {**filtered[0], "is_default": True}
+    return [promoted, *filtered[1:]]
