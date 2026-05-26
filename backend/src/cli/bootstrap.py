@@ -10,6 +10,8 @@ import secrets
 from pathlib import Path
 
 import yaml
+from rich.console import Console
+from rich.prompt import Prompt
 
 _PLACEHOLDER_VALUES = frozenset({"", "...", "sk-...", "pk-...", "your-key-here"})
 
@@ -166,3 +168,68 @@ def filter_seeds_by_providers(
         return filtered
     promoted = {**filtered[0], "is_default": True}
     return [promoted, *filtered[1:]]
+
+
+def step_env_file(
+    *, env_path: Path, example_path: Path, console: Console | None = None
+) -> None:
+    """Step 1/8: ensure ``.env`` exists, copying from ``.env.example`` if missing."""
+    console = console or Console()
+    console.print("[bold cyan][1/8][/] .env file")
+    if env_path.exists():
+        console.print("      [dim]✓ already exists, skipping[/]")
+        return
+    if not example_path.exists():
+        raise FileNotFoundError(
+            f".env.example not found at {example_path}; cannot bootstrap"
+        )
+    env_path.write_text(example_path.read_text())
+    console.print(f"      [green]✓[/] Copied {example_path.name} → {env_path.name}")
+
+
+def step_jwt_secret(*, env_path: Path, console: Console | None = None) -> None:
+    """Step 2/8: generate a JWT secret if the .env value is empty or too short."""
+    console = console or Console()
+    console.print("[bold cyan][2/8][/] JWT secret")
+    current = parse_env_file(env_path).get("JWT_SECRET_KEY", "")
+    if len(current) >= 32 and not is_placeholder(current):  # noqa: PLR2004
+        console.print("      [dim]✓ already configured, skipping[/]")
+        return
+    secret = generate_jwt_secret()
+    update_env_file(env_path, {"JWT_SECRET_KEY": secret})
+    console.print("      [green]✓[/] Wrote 64-char secret to .env")
+
+
+def step_db_password(
+    *,
+    env_path: Path,
+    interactive: bool,
+    env_value: str | None,
+    console: Console | None = None,
+) -> None:
+    """Step 3/8: ensure POSTGRES_PASSWORD is set.
+
+    Interactive: prompts (hidden) if missing. Non-interactive: reads from
+    ``env_value`` (typically ``os.environ["POSTGRES_PASSWORD"]``) and
+    aborts with ``RuntimeError`` if neither source is available.
+    """
+    console = console or Console()
+    console.print("[bold cyan][3/8][/] Database password")
+    current = parse_env_file(env_path).get("POSTGRES_PASSWORD", "")
+    if not is_placeholder(current):
+        console.print("      [dim]✓ already configured, skipping[/]")
+        return
+    if interactive:
+        value = Prompt.ask(
+            "      ? POSTGRES_PASSWORD is empty. Enter a password",
+            password=True,
+        )
+    else:
+        if not env_value:
+            raise RuntimeError(
+                "Non-interactive bootstrap requires POSTGRES_PASSWORD in the "
+                "environment (or set it in .env before running)."
+            )
+        value = env_value
+    update_env_file(env_path, {"POSTGRES_PASSWORD": value})
+    console.print("      [green]✓[/] Saved to .env")
