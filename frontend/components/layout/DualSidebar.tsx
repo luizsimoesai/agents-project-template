@@ -174,7 +174,7 @@ export function DualSidebar() {
 
         {/* Wide panel — hidden on utility pages (profile, admin) */}
         {!isUtilityPage && (
-          <div className="w-[220px] shrink-0 border-r border-border/60 bg-sidebar flex flex-col h-full">
+          <div className="w-55 shrink-0 border-r border-border/60 bg-sidebar flex flex-col h-full">
             {/* Assistant name + description */}
             <div className="px-3 pt-3 pb-2 border-b border-border/40">
               <p className="text-[15px] font-semibold text-foreground truncate">
