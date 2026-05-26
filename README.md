@@ -10,6 +10,35 @@ Template de agente LangGraph com backend FastAPI, autenticação JWT e frontend 
 
 ---
 
+## Quick start (recommended)
+
+After installing the prerequisites above:
+
+```bash
+cd backend
+uv sync
+task bootstrap
+```
+
+The interactive wizard generates secrets, starts PostgreSQL, runs migrations,
+creates an admin account, and seeds the LLM catalogue. Safe to re-run.
+
+Then start the servers:
+
+```bash
+# Terminal 1
+task run                                  # backend on :2026
+
+# Terminal 2
+cd ../frontend && npm install && npm run dev   # frontend on :3000
+```
+
+Log in at <http://localhost:3000>.
+
+The manual setup below remains documented for transparency.
+
+---
+
 ## Passo a passo: do clone ao primeiro agente
 
 ### 1. Configurar o ambiente
