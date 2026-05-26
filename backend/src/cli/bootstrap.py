@@ -145,7 +145,7 @@ def update_env_file(path: Path, updates: dict[str, str]) -> None:
     path.write_text("".join(new_lines))
 
 
-def load_seed_catalogue(path: Path) -> list[dict]:
+def load_seed_catalogue(path: Path) -> list[dict[str, object]]:
     """Load and validate the model seed catalogue.
 
     Returns the list under the top-level ``models`` key (or ``[]`` if
@@ -164,9 +164,9 @@ def load_seed_catalogue(path: Path) -> list[dict]:
 
 
 def filter_seeds_by_providers(
-    seeds: list[dict],
+    seeds: list[dict[str, object]],
     providers: set[str],
-) -> list[dict]:
+) -> list[dict[str, object]]:
     """Keep entries whose ``provider`` is in ``providers``.
 
     Guarantees that the returned list has exactly one ``is_default: True``
@@ -421,7 +421,7 @@ async def step_admin(
             )
         email = env_email
         password = env_password
-    user = User(
+    user = User(  # type: ignore[call-arg]
         email=email,
         password_hash=_hash_password(password),
         name="Admin",
@@ -484,7 +484,7 @@ async def step_seed_models(
     for entry in filtered:
         if entry["model_id"] in existing:
             continue
-        model = LLMModel(
+        model = LLMModel(  # type: ignore[call-arg]
             display_name=entry["display_name"],
             model_id=entry["model_id"],
             provider=entry["provider"],
