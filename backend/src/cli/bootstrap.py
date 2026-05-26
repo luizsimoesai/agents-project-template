@@ -7,6 +7,7 @@ for the full design.
 from __future__ import annotations
 
 import secrets
+from pathlib import Path
 
 _PLACEHOLDER_VALUES = frozenset({"", "...", "sk-...", "pk-...", "your-key-here"})
 
@@ -43,3 +44,78 @@ def configured_providers(env: dict[str, str]) -> set[str]:
         if not is_placeholder(env.get(var, "")):
             providers.add(provider)
     return providers
+
+
+def parse_env_file(path: Path) -> dict[str, str]:
+    """Parse a ``.env`` file into a ``{key: value}`` dict.
+
+    Skips blank lines and comments. Splits on the FIRST ``=`` only, so
+    values containing ``=`` (URLs, query strings) are preserved verbatim.
+    Returns ``{}`` if the file does not exist.
+    """
+    if not path.exists():
+        return {}
+    result: dict[str, str] = {}
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        result[key.strip()] = value
+    return result
+
+
+def update_env_file(path: Path, updates: dict[str, str]) -> None:
+    """Apply ``updates`` to a ``.env`` file in place.
+
+    For each ``(key, value)``:
+
+    * If an uncommented ``KEY=...`` line exists, its value is replaced.
+    * If only a commented ``# KEY=...`` line exists, that line is rewritten
+      as an uncommented assignment with the new value.
+    * Otherwise the assignment is appended to the end of the file.
+
+    Comments, blank lines, and line order are preserved for everything not
+    being updated. Creates the file (with just the new assignments) if it
+    does not yet exist.
+    """
+    if not path.exists():
+        path.write_text(
+            "".join(f"{k}={v}\n" for k, v in updates.items())
+        )
+        return
+
+    new_lines: list[str] = []
+    handled: set[str] = set()
+    for raw in path.read_text().splitlines(keepends=True):
+        replaced = False
+        stripped = raw.lstrip()
+        # Strip trailing newline for matching but keep for emission.
+        body = stripped.rstrip("\n")
+        for key, value in updates.items():
+            if key in handled:
+                continue
+            # Uncommented KEY=...
+            if body.startswith(f"{key}="):
+                new_lines.append(f"{key}={value}\n")
+                handled.add(key)
+                replaced = True
+                break
+            # Commented "# KEY=..." (optional whitespace after the #).
+            if body.startswith("#"):
+                rest = body.lstrip("#").lstrip()
+                if rest.startswith(f"{key}="):
+                    new_lines.append(f"{key}={value}\n")
+                    handled.add(key)
+                    replaced = True
+                    break
+        if not replaced:
+            new_lines.append(raw)
+
+    for key, value in updates.items():
+        if key not in handled:
+            new_lines.append(f"{key}={value}\n")
+
+    path.write_text("".join(new_lines))
