@@ -1,0 +1,122 @@
+"""Tests for the async DB steps: step_admin + step_seed_models."""
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.cli.bootstrap import step_admin, step_seed_models  # noqa: F401
+from src.models.llm_model import LLMModel  # noqa: F401
+from src.models.user import User
+
+
+def _execute_returning(value):
+    """Build an `execute` mock whose .scalar_one_or_none() returns `value`."""
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = value
+    result.all.return_value = []
+    result.scalars.return_value.all.return_value = []
+    execute = AsyncMock(return_value=result)
+    return execute
+
+
+@pytest.fixture
+def session() -> AsyncMock:
+    s = AsyncMock(spec=AsyncSession)
+    s.add = MagicMock()
+    return s
+
+
+async def test_step_admin_skips_when_admin_exists(session: AsyncMock) -> None:
+    session.execute = _execute_returning(MagicMock(spec=User))
+    await step_admin(
+        session=session,
+        interactive=True,
+        env_email=None,
+        env_password=None,
+    )
+    session.add.assert_not_called()
+    session.commit.assert_not_called()
+
+
+async def test_step_admin_creates_in_non_interactive(session: AsyncMock) -> None:
+    session.execute = _execute_returning(None)
+    await step_admin(
+        session=session,
+        interactive=False,
+        env_email="root@example.com",
+        env_password="super-secure-pw",
+    )
+    session.add.assert_called_once()
+    added = session.add.call_args.args[0]
+    assert added.email == "root@example.com"
+    assert added.is_admin is True
+    assert added.is_active is True
+    # Stored hash must NOT equal the plaintext password.
+    assert added.password_hash != "super-secure-pw"
+    session.commit.assert_awaited_once()
+
+
+async def test_step_admin_non_interactive_missing_env(session: AsyncMock) -> None:
+    session.execute = _execute_returning(None)
+    with pytest.raises(RuntimeError, match="BOOTSTRAP_ADMIN_EMAIL"):
+        await step_admin(
+            session=session,
+            interactive=False,
+            env_email=None,
+            env_password="any-strong-pw",
+        )
+
+
+async def test_step_admin_non_interactive_password_too_short(
+    session: AsyncMock,
+) -> None:
+    session.execute = _execute_returning(None)
+    with pytest.raises(RuntimeError, match=">= 8"):
+        await step_admin(
+            session=session,
+            interactive=False,
+            env_email="a@b.c",
+            env_password="short",
+        )
+
+
+async def test_step_admin_interactive_loops_on_short_password(
+    session: AsyncMock,
+) -> None:
+    session.execute = _execute_returning(None)
+    # First password too short, second OK; first confirm matches second pw.
+    prompts = iter(["a@b.c", "short", "longerpassword", "longerpassword"])
+    with patch(
+        "src.cli.bootstrap.Prompt.ask",
+        side_effect=lambda *a, **kw: next(prompts),
+    ):
+        await step_admin(
+            session=session,
+            interactive=True,
+            env_email=None,
+            env_password=None,
+        )
+    assert session.add.called
+    added = session.add.call_args.args[0]
+    assert added.email == "a@b.c"
+
+
+async def test_step_admin_interactive_loops_on_mismatch(session: AsyncMock) -> None:
+    session.execute = _execute_returning(None)
+    prompts = iter(
+        ["a@b.c", "longpassword", "mismatched-confirm", "longpassword", "longpassword"]
+    )
+    with patch(
+        "src.cli.bootstrap.Prompt.ask",
+        side_effect=lambda *a, **kw: next(prompts),
+    ):
+        await step_admin(
+            session=session,
+            interactive=True,
+            env_email=None,
+            env_password=None,
+        )
+    added = session.add.call_args.args[0]
+    assert added.email == "a@b.c"

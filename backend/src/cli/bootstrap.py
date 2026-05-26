@@ -14,6 +14,11 @@ from pathlib import Path
 import yaml
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.core.security import _hash_password
+from src.models.user import User
 
 _PLACEHOLDER_VALUES = frozenset({"", "...", "sk-...", "pk-...", "your-key-here"})
 
@@ -371,3 +376,77 @@ def step_migrations(*, console: Console | None = None) -> None:
         check=True,
     )
     console.print("      [green]✓[/] Schema up to date")
+
+
+_MIN_ADMIN_PASSWORD_LEN = 8
+
+
+async def step_admin(
+    *,
+    session: AsyncSession,
+    interactive: bool,
+    env_email: str | None,
+    env_password: str | None,
+    console: Console | None = None,
+) -> None:
+    """Step 7/8: ensure at least one admin user exists."""
+    console = console or Console()
+    console.print("[bold cyan][7/8][/] Admin user")
+    existing = (
+        await session.execute(
+            select(User).where(User.is_admin.is_(True)).limit(1)
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        console.print("      [dim]✓ admin already exists, skipping[/]")
+        return
+    if interactive:
+        email = Prompt.ask("      ? Admin email")
+        password = _prompt_admin_password(console)
+    else:
+        if not env_email:
+            raise RuntimeError(
+                "Non-interactive bootstrap requires BOOTSTRAP_ADMIN_EMAIL."
+            )
+        if not env_password or len(env_password) < _MIN_ADMIN_PASSWORD_LEN:
+            raise RuntimeError(
+                "Non-interactive bootstrap requires BOOTSTRAP_ADMIN_PASSWORD "
+                f"(>= {_MIN_ADMIN_PASSWORD_LEN} chars)."
+            )
+        email = env_email
+        password = env_password
+    user = User(
+        email=email,
+        password_hash=_hash_password(password),
+        name="Admin",
+        is_admin=True,
+        is_active=True,
+    )
+    session.add(user)
+    await session.commit()
+    console.print(f"      [green]✓[/] Created admin {email}")
+
+
+def _prompt_admin_password(console: Console) -> str:
+    """Loop until the user enters a valid password and confirms it correctly."""
+    while True:
+        pw = Prompt.ask(
+            f"      ? Admin password (min {_MIN_ADMIN_PASSWORD_LEN} chars)",
+            password=True,
+        )
+        if len(pw) < _MIN_ADMIN_PASSWORD_LEN:
+            console.print(
+                f"      [yellow]Password must be at least "
+                f"{_MIN_ADMIN_PASSWORD_LEN} characters.[/]"
+            )
+            continue
+        confirm = Prompt.ask("      ? Confirm password", password=True)
+        if pw != confirm:
+            console.print("      [yellow]Passwords do not match. Try again.[/]")
+            continue
+        return pw
+
+
+async def step_seed_models(*args, **kwargs) -> None:  # type: ignore[misc]
+    """Placeholder — implemented in Task 12."""
+    raise NotImplementedError
