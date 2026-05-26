@@ -11,7 +11,7 @@ from src.cli.bootstrap import (
 
 
 @pytest.mark.parametrize(
-    "value,expected",
+    ("value", "expected"),
     [
         ("", True),
         ("   ", True),
@@ -28,9 +28,12 @@ def test_is_placeholder(value: str, expected: bool) -> None:
     assert is_placeholder(value) is expected
 
 
+_JWT_SECRET_HEX_LENGTH = 64
+
+
 def test_generate_jwt_secret_is_64_hex_chars() -> None:
     secret = generate_jwt_secret()
-    assert len(secret) == 64
+    assert len(secret) == _JWT_SECRET_HEX_LENGTH
     assert re.fullmatch(r"[0-9a-f]{64}", secret)
 
 
