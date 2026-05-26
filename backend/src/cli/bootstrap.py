@@ -112,6 +112,13 @@ def update_env_file(path: Path, updates: dict[str, str]) -> None:
                     replaced = True
                     break
         if not replaced:
+            # Suppress uncommented assignment lines for keys already handled
+            # (avoids duplicates when both a commented and uncommented version
+            # of the same key appear in the file).
+            if "=" in body and not body.startswith("#"):
+                line_key = body.split("=", 1)[0].strip()
+                if line_key in handled:
+                    continue
             new_lines.append(raw)
 
     for key, value in updates.items():

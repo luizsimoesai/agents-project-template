@@ -81,3 +81,12 @@ def test_update_env_file_multiple_updates(tmp_path: Path) -> None:
     assert "NEW=n\n" in text
     assert "BAR=old" not in text
     assert "# FOO=tmpl" not in text
+
+
+def test_update_env_file_no_duplicate_when_both_present(tmp_path: Path) -> None:
+    f = tmp_path / ".env"
+    f.write_text("# FOO=template\nFOO=existing\n")
+    update_env_file(f, {"FOO": "new"})
+    text = f.read_text()
+    assert text.count("FOO=") == 1
+    assert "FOO=new\n" in text
