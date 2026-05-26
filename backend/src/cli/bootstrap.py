@@ -6,16 +6,21 @@ for the full design.
 """
 from __future__ import annotations
 
+import argparse
+import asyncio
+import os
 import secrets
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 import yaml
 from rich.console import Console
+from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.core.security import _hash_password
 from src.models.llm_model import LLMModel
@@ -497,3 +502,145 @@ async def step_seed_models(
         console.print(f"      [green]✓[/] Inserted {inserted} models{suffix}")
     else:
         console.print("      [dim]✓ all models already seeded, skipping[/]")
+
+
+# Resolve paths relative to backend/ (this file lives in backend/src/cli/).
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+_ENV_PATH = _BACKEND_ROOT / ".env"
+_ENV_EXAMPLE_PATH = _BACKEND_ROOT / ".env.example"
+_SEEDS_PATH = _BACKEND_ROOT / "seeds" / "models.yaml"
+
+
+def _print_welcome(console: Console) -> None:
+    console.print(
+        Panel.fit(
+            "agents-project-template · Bootstrap\n"
+            "This wizard sets up your project from zero to running.\n"
+            "Safe to re-run: each step checks current state.",
+            border_style="cyan",
+        )
+    )
+
+
+def _print_complete(console: Console) -> None:
+    console.print(
+        Panel.fit(
+            "[green]✓ Bootstrap complete[/]\n\n"
+            "Next steps:\n"
+            "  backend:   task run\n"
+            "  frontend:  cd ../frontend && npm install && npm run dev\n\n"
+            "Login at http://localhost:3000\n"
+            "API docs at http://localhost:2026/docs",
+            border_style="green",
+        )
+    )
+
+
+async def _run_db_steps(  # noqa: PLR0913
+    *,
+    db_url: str,
+    interactive: bool,
+    env_email: str | None,
+    env_password: str | None,
+    providers: set[str],
+    console: Console,
+) -> None:
+    """Open an async session and execute steps 7 + 8."""
+    engine = create_async_engine(db_url, echo=False)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            await step_admin(
+                session=session,
+                interactive=interactive,
+                env_email=env_email,
+                env_password=env_password,
+                console=console,
+            )
+            await step_seed_models(
+                session=session,
+                seeds_path=_SEEDS_PATH,
+                providers=providers,
+                console=console,
+            )
+    finally:
+        await engine.dispose()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="task bootstrap",
+        description=(
+            "Interactive wizard that takes a fresh clone to a running backend. "
+            "Safe to re-run; each of the 8 steps skips when already configured."
+        ),
+    )
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help=(
+            "Skip prompts. Reads BOOTSTRAP_ADMIN_EMAIL, "
+            "BOOTSTRAP_ADMIN_PASSWORD, POSTGRES_PASSWORD, and the LLM API "
+            "key env vars. Aborts if required values are missing."
+        ),
+    )
+    args = parser.parse_args(argv)
+    interactive = not args.non_interactive
+
+    console = Console()
+    _print_welcome(console)
+
+    try:
+        # Steps 1-4: .env mutations (sync).
+        step_env_file(
+            env_path=_ENV_PATH,
+            example_path=_ENV_EXAMPLE_PATH,
+            console=console,
+        )
+        step_jwt_secret(env_path=_ENV_PATH, console=console)
+        step_db_password(
+            env_path=_ENV_PATH,
+            interactive=interactive,
+            env_value=os.environ.get("POSTGRES_PASSWORD"),
+            console=console,
+        )
+        step_llm_keys(
+            env_path=_ENV_PATH,
+            interactive=interactive,
+            env_values=dict(os.environ),
+            console=console,
+        )
+        # Steps 5-6: infra.
+        step_postgres(console=console)
+        step_migrations(console=console)
+        # Steps 7-8: DB.
+        # Re-read .env so settings sees the values we just wrote.
+        env = parse_env_file(_ENV_PATH)
+        for key, value in env.items():
+            os.environ.setdefault(key, value)
+        # Import settings *after* env is hydrated so Settings() picks
+        # up POSTGRES_PASSWORD, JWT_SECRET_KEY, etc.
+        from src.core.settings import settings  # noqa: PLC0415
+        asyncio.run(
+            _run_db_steps(
+                db_url=settings.db_url,
+                interactive=interactive,
+                env_email=os.environ.get("BOOTSTRAP_ADMIN_EMAIL"),
+                env_password=os.environ.get("BOOTSTRAP_ADMIN_PASSWORD"),
+                providers=configured_providers(env),
+                console=console,
+            )
+        )
+    except RuntimeError as err:
+        console.print(f"\n[red]Error:[/] {err}")
+        return 1
+    except FileNotFoundError as err:
+        console.print(f"\n[red]Error:[/] {err}")
+        return 1
+
+    _print_complete(console)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
