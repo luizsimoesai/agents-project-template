@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-backend}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-backend_secret}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required (set in .env via task bootstrap)}
       POSTGRES_DB: ${POSTGRES_DB:-backend}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -31,7 +31,7 @@ services:
       - .env
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-backend}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-backend_secret}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required (set in .env via task bootstrap)}
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=${POSTGRES_DB:-backend}
       - AEGRA_CONFIG=aegra.json
