@@ -585,7 +585,13 @@ def _print_welcome(console: Console) -> None:
     )
 
 
-def _print_complete(console: Console) -> None:
+def _print_complete(console: Console, *, catalog_empty: bool = False) -> None:
+    warning = (
+        "\n\n[yellow]⚠ No LLM model configured. Add one at "
+        "http://localhost:3000/admin before chatting.[/]"
+        if catalog_empty
+        else ""
+    )
     console.print(
         Panel.fit(
             "[green]✓ Bootstrap complete[/]\n\n"
@@ -593,7 +599,7 @@ def _print_complete(console: Console) -> None:
             "  backend:   uv run task run\n"
             "  frontend:  cd ../frontend && npm install && npm run dev\n\n"
             "Login at http://localhost:3000\n"
-            "API docs at http://localhost:2026/docs",
+            "API docs at http://localhost:2026/docs" + warning,
             border_style="green",
         )
     )
@@ -700,7 +706,7 @@ def main(argv: list[str] | None = None) -> int:
         # Import settings *after* env is hydrated so Settings() picks
         # up POSTGRES_PASSWORD, JWT_SECRET_KEY, etc.
         from src.core.settings import settings  # noqa: PLC0415
-        asyncio.run(
+        catalog_empty = asyncio.run(
             _run_db_steps(
                 db_url=settings.db_url,
                 interactive=interactive,
@@ -719,7 +725,7 @@ def main(argv: list[str] | None = None) -> int:
         console.print(f"\n[red]Error:[/] {err}")
         return 1
 
-    _print_complete(console)
+    _print_complete(console, catalog_empty=bool(catalog_empty))
     return 0
 
 

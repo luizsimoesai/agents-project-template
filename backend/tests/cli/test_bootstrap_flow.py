@@ -5,6 +5,7 @@ to prove the orchestration sequence and that a second run is a no-op.
 """
 from __future__ import annotations
 
+import io
 import os
 import subprocess
 import sys
@@ -12,6 +13,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from rich.console import Console
 
 from src.cli import bootstrap
 
@@ -168,3 +170,15 @@ def test_bootstrap_non_interactive_aborts_when_required_env_missing(
 
     code = bootstrap.main(["--non-interactive"])
     assert code == 1
+
+
+def test_print_complete_warns_when_catalog_empty() -> None:
+    buf = io.StringIO()
+    bootstrap._print_complete(Console(file=buf, width=100), catalog_empty=True)
+    assert "No LLM model configured" in buf.getvalue()
+
+
+def test_print_complete_no_warning_when_catalog_has_model() -> None:
+    buf = io.StringIO()
+    bootstrap._print_complete(Console(file=buf, width=100), catalog_empty=False)
+    assert "No LLM model configured" not in buf.getvalue()
