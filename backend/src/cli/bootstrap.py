@@ -22,7 +22,6 @@ from rich.prompt import Confirm, Prompt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.core.security import _hash_password
 from src.models.llm_model import LLMModel
 from src.models.user import User
 
@@ -421,6 +420,11 @@ async def step_admin(
             )
         email = env_email
         password = env_password
+    # Imported lazily (not at module top) so loading this module does not
+    # eagerly instantiate Settings() via src.core.security -> src.core.settings
+    # before steps 1-4 have created .env. See the matching settings import in main().
+    from src.core.security import _hash_password  # noqa: PLC0415
+
     user = User(  # type: ignore[call-arg]
         email=email,
         password_hash=_hash_password(password),

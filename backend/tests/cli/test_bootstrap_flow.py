@@ -5,7 +5,9 @@ to prove the orchestration sequence and that a second run is a no-op.
 """
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -14,6 +16,38 @@ import pytest
 from src.cli import bootstrap
 
 _SECRET_LEN = 64
+
+
+def test_bootstrap_help_runs_on_fresh_clone(tmp_path: Path) -> None:
+    """``python -m src.cli.bootstrap --help`` must work with no .env and no
+    settings env vars — the exact state of a fresh clone.
+
+    Regression: bootstrap imported ``_hash_password`` at module top level,
+    which eagerly instantiated ``Settings()`` (via ``src.core.security`` ->
+    ``src.core.settings``) and crashed with a pydantic ValidationError
+    before the wizard could create .env. Run in a subprocess because the
+    test suite's conftest pre-populates these env vars in-process, masking
+    the bug.
+    """
+    backend_root = Path(__file__).resolve().parents[2]
+    clean_env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in {"JWT_SECRET_KEY", "POSTGRES_PASSWORD", "DATABASE_URL"}
+    }
+    clean_env["PYTHONPATH"] = str(backend_root)
+    result = subprocess.run(
+        [sys.executable, "-m", "src.cli.bootstrap", "--help"],
+        cwd=tmp_path,  # no .env here, so Settings() can't hydrate from file
+        env=clean_env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"bootstrap --help crashed on a fresh clone:\n{result.stderr}"
+    )
+    assert "bootstrap" in result.stdout.lower()
 
 
 def _mk_env_files(tmp_path: Path) -> tuple[Path, Path]:
