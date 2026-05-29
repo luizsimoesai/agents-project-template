@@ -6,7 +6,11 @@ LangGraph agent template with FastAPI backend, JWT authentication, and Next.js f
 
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
-- [Task](https://taskfile.dev/installation/)
+
+> The `task` commands below are provided by [taskipy](https://github.com/taskipy/taskipy)
+> (tasks defined under `[tool.taskipy.tasks]` in `backend/pyproject.toml`). It is
+> installed automatically by `uv sync`, so no separate install is needed — just run
+> it through uv as `uv run task <name>`.
 
 ---
 
@@ -17,7 +21,7 @@ After installing the prerequisites above:
 ```bash
 cd backend
 uv sync
-task bootstrap
+uv run task bootstrap
 ```
 
 The interactive wizard generates secrets, starts PostgreSQL, runs migrations,
@@ -27,7 +31,7 @@ Then start the servers:
 
 ```bash
 # Terminal 1
-task run                                  # backend on :2026
+uv run task run                           # backend on :2026
 
 # Terminal 2
 cd ../frontend && npm install && npm run dev   # frontend on :3000
@@ -61,7 +65,7 @@ cd backend
 uv venv
 uv sync
 
-uv run aegra dev # or task run
+uv run aegra dev # or uv run task run
 ```
 
 
