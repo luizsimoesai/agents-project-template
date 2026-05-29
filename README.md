@@ -1,10 +1,10 @@
 # agents-project-template
 
-Template de agente LangGraph com backend FastAPI, autenticação JWT e frontend Next.js.
+LangGraph agent template with FastAPI backend, JWT authentication, and Next.js frontend.
 
-## Pré-requisitos
+## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) e Docker Compose
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - [Task](https://taskfile.dev/installation/)
 
@@ -39,21 +39,21 @@ The manual setup below remains documented for transparency.
 
 ---
 
-## Passo a passo: do clone ao primeiro agente
+## Step by step: from clone to first agent
 
-### 1. Configurar o ambiente
+### 1. Set up the environment
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Edite o `.env` e preencha pelo menos:
+Edit the `.env` and fill in at least:
 
-- `JWT_SECRET_KEY` — mínimo 32 caracteres (gere com `openssl rand -hex 32`)
-- `OPENAI_API_KEY` ou `ANTHROPIC_API_KEY` — chave do provedor de LLM
+- `JWT_SECRET_KEY` — minimum 32 characters (generate with `openssl rand -hex 32`)
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` — LLM provider key
 
-### 2. Instalar dependências
+### 2. Install dependencies
 
 ```bash
 cd backend
@@ -61,47 +61,47 @@ cd backend
 uv venv
 uv sync
 
-uv run aegra dev # ou task run
+uv run aegra dev # or task run
 ```
 
 
 ```bash
-# Servidor: http://localhost:2026
+# Server: http://localhost:2026
 # Docs (Swagger): http://localhost:2026/docs
 ```
 
 ---
 
-## Criando o primeiro usuário admin
+## Creating the first admin user
 
-O endpoint `POST /api/v1/auth/register` é público, mas cria usuários comuns (`is_admin=false`). A promoção a admin é feita via SQL — isso é intencional por segurança.
+The `POST /api/v1/auth/register` endpoint is public but always creates regular users (`is_admin=false`). Admin promotion is done via SQL — this is intentional for security reasons.
 
-### Registrar o usuário
+### Register the user
 
 ```bash
 curl -X POST http://localhost:2026/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name": "Admin", "email": "admin@example.com", "password": "senha123!"}'
+  -d '{"name": "Admin", "email": "admin@example.com", "password": "password123!"}'
 ```
 
-Ou use a interface em `http://localhost:2026/docs` → `POST /api/v1/auth/register`.
+Or use the interface at `http://localhost:2026/docs` → `POST /api/v1/auth/register`.
 
-### Promover a admin via SQL
+### Promote to admin via SQL
 
 ```bash
 docker exec -it backend-postgres psql -U backend -d backend \
   -c "UPDATE users SET is_admin = true WHERE email = 'admin@example.com';"
 ```
 
-### Fazer login e obter o JWT
+### Log in and obtain the JWT
 
 ```bash
 curl -X POST http://localhost:2026/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@example.com", "password": "senha123!"}'
+  -d '{"email": "admin@example.com", "password": "password123!"}'
 ```
 
-Resposta:
+Response:
 
 ```json
 {
@@ -112,9 +112,9 @@ Resposta:
 
 ---
 
-## Criando um novo assistente (agente)
+## Creating a new assistant (agent)
 
-O Aegra expõe a [LangGraph API](https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref/) na mesma porta. O grafo `agent` está registrado em `aegra.json`.
+Aegra exposes the [LangGraph API](https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref/) on the same port. The `agent` graph is registered in `aegra.json`.
 
 ```bash
 curl -X POST http://localhost:2026/assistants \
@@ -122,72 +122,72 @@ curl -X POST http://localhost:2026/assistants \
   -H "Content-Type: application/json" \
   -d '{
     "graph_id": "agent",
-    "name": "Meu Agente",
+    "name": "My Agent",
     "config": {
       "configurable": {
         "model": "anthropic/claude-sonnet-4-6",
-        "system_prompt": "Você é um assistente útil."
+        "system_prompt": "You are a helpful assistant."
       }
     }
   }'
 ```
 
-Modelos disponíveis seguem o formato `"provider/model"`, ex:
+Available models follow the `"provider/model"` format, e.g.:
 - `"anthropic/claude-sonnet-4-6"`
 - `"openai/gpt-4o-mini"`
-- `"ollama/llama3.2"` (requer Ollama local)
+- `"ollama/llama3.2"` (requires local Ollama)
 
 ---
 
-## Registar um novo tipo de agente
+## Registering a new agent type
 
-O template usa uma convenção de dois ficheiros para expor novos grafos ao utilizador final:
+The template uses a two-file convention to expose new graphs to the end user:
 
-**1. Registar o grafo no backend** (`backend/aegra.json`):
+**1. Register the graph in the backend** (`backend/aegra.json`):
 
 ```json
 {
   "graphs": {
     "agent":      "./src/agent/graph.py:graph",
     "deep_agent": "./src/agent/deepagents/graph.py:graph",
-    "meu_agente": "./src/agent/meu_agente/graph.py:graph"
+    "my_agent":   "./src/agent/my_agent/graph.py:graph"
   }
 }
 ```
 
-**2. Adicionar a descrição no frontend** (`frontend/lib/graph-types.ts`):
+**2. Add the description in the frontend** (`frontend/lib/graph-types.ts`):
 
 ```ts
 export const GRAPH_TYPES: GraphType[] = [
-  // ... entradas existentes ...
+  // ... existing entries ...
   {
-    graph_id: "meu_agente",
-    label: "Nome Amigável",
-    description: "Uma frase explicando o que este agente faz.",
+    graph_id: "my_agent",
+    label: "Friendly Name",
+    description: "A sentence explaining what this agent does.",
   },
 ]
 ```
 
-O select de criação de assistentes usa este array — ao adicionar uma entrada aqui, a opção aparece imediatamente para o utilizador final. Se um assistente existente tiver um `graph_id` não listado, o badge na lista mostra o `graph_id` cru como fallback.
+The assistant creation select uses this array — adding an entry here makes the option immediately available to the end user. If an existing assistant has a `graph_id` not listed here, the badge in the list falls back to displaying the raw `graph_id`.
 
 ---
 
-## Resetar o banco de dados
+## Reset the database
 
 ```bash
-docker compose down -v        # para e remove o volume
-docker compose up postgres -d # recria o container
-uv run alembic upgrade head   # reaplicar as migrations
+docker compose down -v        # stop and remove the volume
+docker compose up postgres -d # recreate the container
+uv run alembic upgrade head   # re-apply migrations
 ```
 
 ---
 
-## Stack do projeto
+## Project stack
 
-| Camada    | Tecnologia                        |
+| Layer     | Technology                        |
 |-----------|-----------------------------------|
 | Backend   | FastAPI + Aegra + LangGraph       |
-| Agente    | LangGraph ReAct (tools + LLM)     |
-| Banco     | PostgreSQL + SQLAlchemy + Alembic |
+| Agent     | LangGraph ReAct (tools + LLM)     |
+| Database  | PostgreSQL + SQLAlchemy + Alembic |
 | Auth      | JWT (access + refresh tokens)     |
 | Frontend  | Next.js                           |
