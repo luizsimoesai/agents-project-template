@@ -501,31 +501,45 @@ def _prompt_admin_password(console: Console) -> str:
         return pw
 
 
-async def step_seed_models(
+async def step_seed_models(  # noqa: PLR0913
     *,
     session: AsyncSession,
     seeds_path: Path,
     providers: set[str],
+    ollama_model: str | None = None,
+    ollama_base_url: str | None = None,
     console: Console | None = None,
 ) -> None:
-    """Step 8/8: insert LLM models filtered by ``providers``.
+    """Step 9/9: insert cloud catalogue models (filtered by ``providers``) plus
+    an optional Ollama model.
 
-    Idempotent: entries already present (matched by ``model_id``) are
-    skipped silently. At most one inserted entry has ``is_default=True``
-    (guaranteed by :func:`filter_seeds_by_providers`).
+    Idempotent: entries already present (matched by ``model_id``) are skipped.
+    Exactly one inserted entry is ``is_default=True`` — the cloud catalogue's
+    default when a cloud provider is configured, otherwise the Ollama model,
+    otherwise none (empty catalog).
     """
     console = console or Console()
-    console.print("[bold cyan][8/8][/] Seed LLM models")
+    console.print("[bold cyan][9/9][/] Seed LLM models")
     catalogue = load_seed_catalogue(seeds_path)
     filtered = filter_seeds_by_providers(catalogue, providers)
+    # Ollama is a code-built entry (not in the catalogue). It becomes the default
+    # only when no cloud model was configured.
+    if not is_placeholder(ollama_model or ""):
+        filtered = [
+            *filtered,
+            {
+                "display_name": f"{ollama_model} (local)",
+                "model_id": f"ollama:{ollama_model}",
+                "provider": "ollama",
+                "description": "Local model via Ollama",
+                "base_url": ollama_base_url or _OLLAMA_DEFAULT_BASE_URL,
+                "is_default": len(filtered) == 0,
+            },
+        ]
     if not filtered:
-        console.print(
-            "      [yellow]No models match configured providers; skipping[/]"
-        )
+        console.print("      [yellow]No models configured; catalog is empty[/]")
         return
-    existing_rows = (
-        await session.execute(select(LLMModel.model_id))
-    ).all()
+    existing_rows = (await session.execute(select(LLMModel.model_id))).all()
     existing = {row[0] for row in existing_rows}
     inserted = 0
     default_chosen: str | None = None
@@ -537,6 +551,7 @@ async def step_seed_models(
             model_id=entry["model_id"],
             provider=entry["provider"],
             description=entry.get("description"),
+            base_url=entry.get("base_url"),
             is_default=bool(entry.get("is_default")),
             is_active=True,
         )

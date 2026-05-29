@@ -238,3 +238,91 @@ models:
     added = session.add.call_args.args[0]
     assert added.model_id == "openai:b"
     assert added.is_default is True
+
+
+async def test_step_seed_models_seeds_ollama_as_default_when_no_cloud(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text(
+        """
+models:
+  - display_name: A
+    model_id: anthropic:a
+    provider: anthropic
+    is_default: true
+""",
+    )
+    existing_result = MagicMock()
+    existing_result.all.return_value = []
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers=set(),  # no cloud providers
+        ollama_model="llama3.2",
+        ollama_base_url="http://localhost:11434",
+    )
+    assert session.add.call_count == 1
+    added = session.add.call_args.args[0]
+    assert added.model_id == "ollama:llama3.2"
+    assert added.provider == "ollama"
+    assert added.base_url == "http://localhost:11434"
+    assert added.is_default is True
+
+
+async def test_step_seed_models_ollama_not_default_when_cloud_present(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text(
+        """
+models:
+  - display_name: A
+    model_id: anthropic:a
+    provider: anthropic
+    is_default: true
+""",
+    )
+    existing_result = MagicMock()
+    existing_result.all.return_value = []
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers={"anthropic"},
+        ollama_model="llama3.2",
+    )
+    added_by_id = {
+        c.args[0].model_id: c.args[0] for c in session.add.call_args_list
+    }
+    assert added_by_id["anthropic:a"].is_default is True
+    assert added_by_id["ollama:llama3.2"].is_default is False
+
+
+async def test_step_seed_models_empty_when_nothing_configured(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text(
+        """
+models:
+  - display_name: A
+    model_id: anthropic:a
+    provider: anthropic
+""",
+    )
+    existing_result = MagicMock()
+    existing_result.all.return_value = []
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers=set(),
+        ollama_model=None,
+    )
+    session.add.assert_not_called()
+    session.commit.assert_not_called()
