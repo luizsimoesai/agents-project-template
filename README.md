@@ -16,7 +16,14 @@ LangGraph agent template with FastAPI backend, JWT authentication, and Next.js f
 
 ## Quick start (recommended)
 
-After installing the prerequisites above:
+After installing the prerequisites above, clone the repository:
+
+```bash
+git clone git@github.com:luizsimoesai/agents-project-template.git
+cd agents-project-template
+```
+
+Then bootstrap the backend:
 
 ```bash
 cd backend
