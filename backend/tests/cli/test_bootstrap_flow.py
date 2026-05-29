@@ -115,6 +115,7 @@ def test_bootstrap_full_run_then_idempotent_rerun(
 
     async def fake_db_steps(**kwargs):
         db_calls.append(kwargs)
+        return False  # catalog not empty
 
     monkeypatch.setattr("src.cli.bootstrap._run_db_steps", fake_db_steps)
 
@@ -139,6 +140,8 @@ def test_bootstrap_full_run_then_idempotent_rerun(
     # DB steps ran exactly once.
     assert len(db_calls) == 1
     assert db_calls[0]["providers"] == {"anthropic"}
+    # No Ollama configured in this non-interactive run.
+    assert db_calls[0]["ollama_model"] is None
 
     # Run 2: re-run. .env is already fully populated; should still exit 0,
     # write nothing new, and call DB steps once more (idempotent at the

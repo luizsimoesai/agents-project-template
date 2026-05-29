@@ -659,8 +659,8 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=(
             "Skip prompts. Reads BOOTSTRAP_ADMIN_EMAIL, "
-            "BOOTSTRAP_ADMIN_PASSWORD, POSTGRES_PASSWORD, and the LLM API "
-            "key env vars. Aborts if required values are missing."
+            "BOOTSTRAP_ADMIN_PASSWORD, POSTGRES_PASSWORD, OLLAMA_MODEL, and the "
+            "LLM API key env vars. Aborts if required values are missing."
         ),
     )
     args = parser.parse_args(argv)
