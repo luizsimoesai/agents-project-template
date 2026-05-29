@@ -326,3 +326,21 @@ models:
     )
     session.add.assert_not_called()
     session.commit.assert_not_called()
+
+
+async def test_step_seed_models_skips_existing_ollama(
+    session: AsyncMock, tmp_path: Path
+) -> None:
+    seeds_path = tmp_path / "models.yaml"
+    seeds_path.write_text("models: []\n")
+    existing_result = MagicMock()
+    existing_result.all.return_value = [("ollama:llama3.2",)]
+    session.execute = AsyncMock(return_value=existing_result)
+
+    await step_seed_models(
+        session=session,
+        seeds_path=seeds_path,
+        providers=set(),
+        ollama_model="llama3.2",
+    )
+    session.add.assert_not_called()

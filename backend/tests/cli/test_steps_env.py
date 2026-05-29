@@ -133,3 +133,16 @@ def test_step_ollama_non_interactive_skips_when_absent(tmp_path: Path) -> None:
     env_path.write_text("OLLAMA_MODEL=\n")
     step_ollama(env_path=env_path, interactive=False, env_value=None)
     assert "OLLAMA_BASE_URL" not in env_path.read_text()
+
+
+def test_step_ollama_preserves_existing_base_url(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("OLLAMA_MODEL=\nOLLAMA_BASE_URL=http://gpu-box:11434\n")
+    with patch("src.cli.bootstrap.Confirm.ask", return_value=True), patch(
+        "src.cli.bootstrap.Prompt.ask", return_value="llama3.2"
+    ):
+        step_ollama(env_path=env_path, interactive=True, env_value=None)
+    text = env_path.read_text()
+    assert "OLLAMA_MODEL=llama3.2" in text
+    assert "OLLAMA_BASE_URL=http://gpu-box:11434" in text
+    assert "localhost" not in text

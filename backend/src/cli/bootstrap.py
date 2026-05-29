@@ -651,7 +651,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="uv run task bootstrap",
         description=(
             "Interactive wizard that takes a fresh clone to a running backend. "
-            "Safe to re-run; each of the 8 steps skips when already configured."
+            "Safe to re-run; each of the 9 steps skips when already configured."
         ),
     )
     parser.add_argument(
