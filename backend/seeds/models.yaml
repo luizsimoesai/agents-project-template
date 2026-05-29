@@ -1,7 +1,8 @@
 # Curated LLM catalogue used by `task bootstrap`.
 #
 # Wizard inserts only entries whose `provider` matches a configured API key.
-# Ollama is always included (no API key required).
+# Ollama is NOT listed here — it is opt-in via the wizard's Ollama step
+# (free-text model name) and seeded separately.
 #
 # `is_default: true` is allowed on AT MOST ONE entry (validated at load time).
 # If the default-marked entry's provider is not configured, the wizard
@@ -28,8 +29,3 @@ models:
     model_id: "openai:gpt-4o-mini"
     provider: "openai"
     description: "Affordable, fast OpenAI option"
-
-  - display_name: "Llama 3.2 (local)"
-    model_id: "ollama:llama3.2"
-    provider: "ollama"
-    description: "Local Llama via Ollama — no API key required"
