@@ -50,12 +50,13 @@ def generate_jwt_secret() -> str:
 
 
 def configured_providers(env: dict[str, str]) -> set[str]:
-    """Return the set of LLM providers whose API key is non-placeholder in ``env``.
+    """Return the set of cloud LLM providers whose API key is non-placeholder.
 
-    Ollama is always included — it needs no API key (just a local daemon
-    or a configured base URL).
+    Ollama is intentionally NOT included here. It needs no API key and is opt-in
+    via :func:`step_ollama` (free-text model name), then seeded separately in
+    :func:`step_seed_models` — it is not driven by catalogue/provider filtering.
     """
-    providers = {"ollama"}
+    providers: set[str] = set()
     for provider, var in _PROVIDER_KEY_ENV.items():
         if not is_placeholder(env.get(var, "")):
             providers.add(provider)

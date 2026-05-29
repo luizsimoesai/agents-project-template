@@ -136,7 +136,7 @@ def test_bootstrap_full_run_then_idempotent_rerun(
     assert len(secret_line.split("=", 1)[1]) == _SECRET_LEN
     # DB steps ran exactly once.
     assert len(db_calls) == 1
-    assert db_calls[0]["providers"] == {"ollama", "anthropic"}
+    assert db_calls[0]["providers"] == {"anthropic"}
 
     # Run 2: re-run. .env is already fully populated; should still exit 0,
     # write nothing new, and call DB steps once more (idempotent at the

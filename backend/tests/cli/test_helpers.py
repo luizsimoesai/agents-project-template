@@ -43,17 +43,17 @@ def test_generate_jwt_secret_is_unique() -> None:
     assert generate_jwt_secret() != generate_jwt_secret()
 
 
-def test_configured_providers_always_includes_ollama() -> None:
-    assert configured_providers({}) == {"ollama"}
+def test_configured_providers_empty_when_no_keys() -> None:
+    assert configured_providers({}) == set()
 
 
 def test_configured_providers_detects_real_keys() -> None:
     env = {
-        "ANTHROPIC_API_KEY": "real-anthropic-key",
-        "OPENAI_API_KEY": "sk-real-openai-key",
-        "OPENROUTER_API_KEY": "sk-or-real",
+        "ANTHROPIC_API_KEY": "real-anthropic",
+        "OPENAI_API_KEY": "real-openai",
+        "OPENROUTER_API_KEY": "real-openrouter",
     }
-    assert configured_providers(env) == {"ollama", "anthropic", "openai", "openrouter"}
+    assert configured_providers(env) == {"anthropic", "openai", "openrouter"}
 
 
 def test_configured_providers_ignores_placeholders() -> None:
@@ -62,4 +62,4 @@ def test_configured_providers_ignores_placeholders() -> None:
         "OPENAI_API_KEY": "sk-...",
         "OPENROUTER_API_KEY": "your-key-here",
     }
-    assert configured_providers(env) == {"ollama"}
+    assert configured_providers(env) == set()
