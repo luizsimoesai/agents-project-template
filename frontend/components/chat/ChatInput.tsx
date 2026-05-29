@@ -46,13 +46,15 @@ export function ChatInput({
 
   function handleSend() {
     const msg = value.trim()
-    if (!msg || isStreaming) return
+    if (!msg || isStreaming || noModels) return
     onSubmit(msg)
     setValue("")
     ref.current?.focus()
   }
 
-  const showPicker = !!models && models.length > 0 && !!onModelChange
+  const hasPicker = !!onModelChange && Array.isArray(models)
+  const noModels = hasPicker && models!.length === 0
+  const showPicker = hasPicker && models!.length > 0
 
   return (
     <div className={centered ? "w-full" : "border-t border-border/60 px-4 py-3"}>
@@ -66,6 +68,13 @@ export function ChatInput({
               onChange={onModelChange!}
               disabled={isStreaming}
             />
+          </div>
+        )}
+        {noModels && (
+          <div className="flex items-center px-3 py-2 border-b border-border/40 bg-muted/20">
+            <p className="font-mono text-xs text-muted-foreground">
+              No model configured — ask an admin to add one in /admin.
+            </p>
           </div>
         )}
         <div className="relative flex items-end gap-2 px-3 py-2">
@@ -94,7 +103,7 @@ export function ChatInput({
           ) : (
             <Button
               onClick={handleSend}
-              disabled={!value.trim() || disabled}
+              disabled={!value.trim() || disabled || noModels}
               size="icon"
               className="h-8 w-8 shrink-0 rounded-lg"
               style={{ backgroundColor: value.trim() ? "#2a9d8f" : undefined }}
