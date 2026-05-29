@@ -300,6 +300,49 @@ def step_llm_keys(
         update_env_file(env_path, updates)
 
 
+_OLLAMA_DEFAULT_BASE_URL = "http://localhost:11434"
+
+
+def step_ollama(
+    *,
+    env_path: Path,
+    interactive: bool,
+    env_value: str | None,
+    console: Console | None = None,
+) -> None:
+    """Step 5/9: optionally record a local Ollama model in .env.
+
+    Unlike cloud providers (which need an API key), Ollama needs only a model
+    name. This step writes ``OLLAMA_MODEL`` (and a default ``OLLAMA_BASE_URL``)
+    to ``.env``; the catalog row itself is seeded later by
+    :func:`step_seed_models`. This step never touches the DB.
+
+    Interactive: ask Yes/No, then prompt for the model name. Non-interactive:
+    use ``env_value`` (typically ``os.environ["OLLAMA_MODEL"]``); skip if absent.
+    Skips entirely when ``.env`` already has a non-placeholder ``OLLAMA_MODEL``.
+    """
+    console = console or Console()
+    console.print("[bold cyan][5/9][/] Ollama model (optional)")
+    parsed = parse_env_file(env_path)
+    if not is_placeholder(parsed.get("OLLAMA_MODEL", "")):
+        console.print("      [dim]✓ already configured, skipping[/]")
+        return
+    if interactive:
+        if not Confirm.ask("      ? Use a local Ollama model?", default=False):
+            console.print("      [dim]Skipped Ollama[/]")
+            return
+        name = Prompt.ask("      ? Ollama model name (e.g. llama3.2)")
+    else:
+        name = env_value or ""
+    if is_placeholder(name):
+        return
+    updates = {"OLLAMA_MODEL": name}
+    if is_placeholder(parsed.get("OLLAMA_BASE_URL", "")):
+        updates["OLLAMA_BASE_URL"] = _OLLAMA_DEFAULT_BASE_URL
+    update_env_file(env_path, updates)
+    console.print(f"      [green]✓[/] Saved OLLAMA_MODEL={name} to .env")
+
+
 _POSTGRES_HEALTH_TIMEOUT_SECS = 60
 _POSTGRES_POLL_INTERVAL_SECS = 2
 

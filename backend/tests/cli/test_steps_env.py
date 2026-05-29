@@ -8,6 +8,7 @@ from src.cli.bootstrap import (
     step_db_password,
     step_env_file,
     step_jwt_secret,
+    step_ollama,
 )
 
 _SECRET_LEN = 64
@@ -90,3 +91,45 @@ def test_step_db_password_no_op_when_present(tmp_path: Path) -> None:
     # No prompt patched — would raise if prompt was reached.
     step_db_password(env_path=target, interactive=True, env_value=None)
     assert "POSTGRES_PASSWORD=existing" in target.read_text()
+
+
+def test_step_ollama_interactive_writes_model_and_base_url(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("OLLAMA_MODEL=\n")
+    with patch("src.cli.bootstrap.Confirm.ask", return_value=True), patch(
+        "src.cli.bootstrap.Prompt.ask", return_value="llama3.2"
+    ):
+        step_ollama(env_path=env_path, interactive=True, env_value=None)
+    text = env_path.read_text()
+    assert "OLLAMA_MODEL=llama3.2" in text
+    assert "OLLAMA_BASE_URL=http://localhost:11434" in text
+
+
+def test_step_ollama_interactive_decline_writes_nothing(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("OLLAMA_MODEL=\n")
+    with patch("src.cli.bootstrap.Confirm.ask", return_value=False):
+        step_ollama(env_path=env_path, interactive=True, env_value=None)
+    assert "OLLAMA_BASE_URL" not in env_path.read_text()
+
+
+def test_step_ollama_skips_when_already_configured(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("OLLAMA_MODEL=mistral\n")
+    with patch("src.cli.bootstrap.Confirm.ask") as confirm:
+        step_ollama(env_path=env_path, interactive=True, env_value=None)
+    confirm.assert_not_called()
+
+
+def test_step_ollama_non_interactive_reads_env_value(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("OLLAMA_MODEL=\n")
+    step_ollama(env_path=env_path, interactive=False, env_value="phi3")
+    assert "OLLAMA_MODEL=phi3" in env_path.read_text()
+
+
+def test_step_ollama_non_interactive_skips_when_absent(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("OLLAMA_MODEL=\n")
+    step_ollama(env_path=env_path, interactive=False, env_value=None)
+    assert "OLLAMA_BASE_URL" not in env_path.read_text()
