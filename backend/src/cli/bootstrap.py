@@ -186,9 +186,9 @@ def filter_seeds_by_providers(
 def step_env_file(
     *, env_path: Path, example_path: Path, console: Console | None = None
 ) -> None:
-    """Step 1/8: ensure ``.env`` exists, copying from ``.env.example`` if missing."""
+    """Step 1/9: ensure ``.env`` exists, copying from ``.env.example`` if missing."""
     console = console or Console()
-    console.print("[bold cyan][1/8][/] .env file")
+    console.print("[bold cyan][1/9][/] .env file")
     if env_path.exists():
         console.print("      [dim]✓ already exists, skipping[/]")
         return
@@ -201,9 +201,9 @@ def step_env_file(
 
 
 def step_jwt_secret(*, env_path: Path, console: Console | None = None) -> None:
-    """Step 2/8: generate a JWT secret if the .env value is empty or too short."""
+    """Step 2/9: generate a JWT secret if the .env value is empty or too short."""
     console = console or Console()
-    console.print("[bold cyan][2/8][/] JWT secret")
+    console.print("[bold cyan][2/9][/] JWT secret")
     current = parse_env_file(env_path).get("JWT_SECRET_KEY", "")
     if len(current) >= 32 and not is_placeholder(current):  # noqa: PLR2004
         console.print("      [dim]✓ already configured, skipping[/]")
@@ -220,14 +220,14 @@ def step_db_password(
     env_value: str | None,
     console: Console | None = None,
 ) -> None:
-    """Step 3/8: ensure POSTGRES_PASSWORD is set.
+    """Step 3/9: ensure POSTGRES_PASSWORD is set.
 
     Interactive: prompts (hidden) if missing. Non-interactive: reads from
     ``env_value`` (typically ``os.environ["POSTGRES_PASSWORD"]``) and
     aborts with ``RuntimeError`` if neither source is available.
     """
     console = console or Console()
-    console.print("[bold cyan][3/8][/] Database password")
+    console.print("[bold cyan][3/9][/] Database password")
     current = parse_env_file(env_path).get("POSTGRES_PASSWORD", "")
     if not is_placeholder(current):
         console.print("      [dim]✓ already configured, skipping[/]")
@@ -262,7 +262,7 @@ def step_llm_keys(
     env_values: dict[str, str],
     console: Console | None = None,
 ) -> None:
-    """Step 4/8: collect LLM provider API keys.
+    """Step 4/9: collect LLM provider API keys.
 
     For each provider whose key is missing or placeholder in ``.env``:
 
@@ -273,7 +273,7 @@ def step_llm_keys(
     Already-configured providers are skipped in both modes.
     """
     console = console or Console()
-    console.print("[bold cyan][4/8][/] LLM provider keys")
+    console.print("[bold cyan][4/9][/] LLM provider keys")
     current = parse_env_file(env_path)
     updates: dict[str, str] = {}
     for _provider, (label, var) in _PROVIDER_DISPLAY.items():
@@ -371,9 +371,9 @@ def _postgres_health() -> str:
 
 
 def step_postgres(*, console: Console | None = None) -> None:
-    """Step 5/8: ensure the Postgres container is running and healthy."""
+    """Step 6/9: ensure the Postgres container is running and healthy."""
     console = console or Console()
-    console.print("[bold cyan][5/8][/] PostgreSQL container")
+    console.print("[bold cyan][6/9][/] PostgreSQL container")
     if _postgres_health() == "healthy":
         console.print("      [dim]✓ already healthy, skipping[/]")
         return
@@ -397,9 +397,9 @@ def step_postgres(*, console: Console | None = None) -> None:
 
 
 def step_migrations(*, console: Console | None = None) -> None:
-    """Step 6/8: run alembic upgrade head if not already at head."""
+    """Step 7/9: run alembic upgrade head if not already at head."""
     console = console or Console()
-    console.print("[bold cyan][6/8][/] Database migrations")
+    console.print("[bold cyan][7/9][/] Database migrations")
     current = subprocess.run(
         ["uv", "run", "alembic", "current"],
         capture_output=True,
@@ -438,9 +438,9 @@ async def step_admin(
     env_password: str | None,
     console: Console | None = None,
 ) -> None:
-    """Step 7/8: ensure at least one admin user exists."""
+    """Step 8/9: ensure at least one admin user exists."""
     console = console or Console()
-    console.print("[bold cyan][7/8][/] Admin user")
+    console.print("[bold cyan][8/9][/] Admin user")
     existing = (
         await session.execute(
             select(User).where(User.is_admin.is_(True)).limit(1)
@@ -606,9 +606,15 @@ async def _run_db_steps(  # noqa: PLR0913
     env_email: str | None,
     env_password: str | None,
     providers: set[str],
+    ollama_model: str | None,
+    ollama_base_url: str | None,
     console: Console,
-) -> None:
-    """Open an async session and execute steps 7 + 8."""
+) -> bool:
+    """Open an async session and execute steps 8 + 9.
+
+    Returns True when the catalog ended up empty (no models at all), so the
+    caller can warn the user to add one in /admin.
+    """
     engine = create_async_engine(db_url, echo=False)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
@@ -624,8 +630,12 @@ async def _run_db_steps(  # noqa: PLR0913
                 session=session,
                 seeds_path=_SEEDS_PATH,
                 providers=providers,
+                ollama_model=ollama_model,
+                ollama_base_url=ollama_base_url,
                 console=console,
             )
+            result = await session.execute(select(LLMModel.id).limit(1))
+            return result.first() is None
     finally:
         await engine.dispose()
 
@@ -673,10 +683,16 @@ def main(argv: list[str] | None = None) -> int:
             env_values=dict(os.environ),
             console=console,
         )
-        # Steps 5-6: infra.
+        step_ollama(
+            env_path=_ENV_PATH,
+            interactive=interactive,
+            env_value=os.environ.get("OLLAMA_MODEL"),
+            console=console,
+        )
+        # Steps 6-7: infra.
         step_postgres(console=console)
         step_migrations(console=console)
-        # Steps 7-8: DB.
+        # Steps 8-9: DB.
         # Re-read .env so settings sees the values we just wrote.
         env = parse_env_file(_ENV_PATH)
         for key, value in env.items():
@@ -691,6 +707,8 @@ def main(argv: list[str] | None = None) -> int:
                 env_email=os.environ.get("BOOTSTRAP_ADMIN_EMAIL"),
                 env_password=os.environ.get("BOOTSTRAP_ADMIN_PASSWORD"),
                 providers=configured_providers(env),
+                ollama_model=env.get("OLLAMA_MODEL"),
+                ollama_base_url=env.get("OLLAMA_BASE_URL"),
                 console=console,
             )
         )
