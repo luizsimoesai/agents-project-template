@@ -1,6 +1,6 @@
 """Interactive bootstrap wizard for the agents-project-template.
 
-Run via `task bootstrap`. Idempotent: re-runs skip already-configured
+Run via `uv run task bootstrap`. Idempotent: re-runs skip already-configured
 steps. See `docs/superpowers/specs/2026-05-23-onboarding-and-template-launch-design.md`
 for the full design.
 """
@@ -531,7 +531,7 @@ def _print_complete(console: Console) -> None:
         Panel.fit(
             "[green]✓ Bootstrap complete[/]\n\n"
             "Next steps:\n"
-            "  backend:   task run\n"
+            "  backend:   uv run task run\n"
             "  frontend:  cd ../frontend && npm install && npm run dev\n\n"
             "Login at http://localhost:3000\n"
             "API docs at http://localhost:2026/docs",
@@ -573,7 +573,7 @@ async def _run_db_steps(  # noqa: PLR0913
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="task bootstrap",
+        prog="uv run task bootstrap",
         description=(
             "Interactive wizard that takes a fresh clone to a running backend. "
             "Safe to re-run; each of the 8 steps skips when already configured."
