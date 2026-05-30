@@ -100,11 +100,6 @@ flowchart TB
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-> The `task` commands below are provided by [taskipy](https://github.com/taskipy/taskipy)
-> (tasks defined under `[tool.taskipy.tasks]` in `backend/pyproject.toml`). It is
-> installed automatically by `uv sync`, so no separate install is needed — just run
-> it through uv as `uv run task <name>`.
-
 ---
 
 ## Quick start (recommended)
