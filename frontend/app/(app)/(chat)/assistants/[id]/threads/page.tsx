@@ -70,6 +70,7 @@ export default function ThreadsListPage() {
           onStop={() => {}}
           isStreaming={createThread.isPending}
           disabled={createThread.isPending}
+          models={models}
           centered
         />
       </div>

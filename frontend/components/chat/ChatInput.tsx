@@ -52,9 +52,11 @@ export function ChatInput({
     ref.current?.focus()
   }
 
-  const hasPicker = !!onModelChange && Array.isArray(models)
-  const noModels = hasPicker && models!.length === 0
-  const showPicker = hasPicker && models!.length > 0
+  // The empty-catalog guard depends only on the models prop, not the picker:
+  // the new-assistant landing page passes `models` but owns its own picker
+  // (no onModelChange), and must still block sending when the catalog is empty.
+  const noModels = Array.isArray(models) && models.length === 0
+  const showPicker = !!onModelChange && Array.isArray(models) && models.length > 0
 
   return (
     <div className={centered ? "w-full" : "border-t border-border/60 px-4 py-3"}>

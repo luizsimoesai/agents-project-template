@@ -3,10 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Pencil, Trash2, Plus } from "lucide-react"
+import { Pencil, Trash2, Plus, TriangleAlert } from "lucide-react"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAssistants, useDeleteAssistant } from "@/lib/hooks/useAssistants"
+import { useModels } from "@/lib/hooks/useModels"
 import { AssistantForm } from "@/components/assistants/AssistantForm"
 import { getAssistantIcon } from "@/lib/icon-map"
 import {
@@ -25,8 +26,10 @@ import { getGraphType } from "@/lib/graph-types"
 
 export default function AssistantPickerPage() {
   const { data: assistants, isLoading } = useAssistants()
+  const { data: models, isLoading: modelsLoading } = useModels()
   const deleteAssistant = useDeleteAssistant()
   const user = useAuthStore((s) => s.user)
+  const noModels = !modelsLoading && models?.length === 0
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<AssistantRead | undefined>(undefined)
   const [deleteTarget, setDeleteTarget] = useState<AssistantRead | undefined>(undefined)
@@ -64,6 +67,31 @@ export default function AssistantPickerPage() {
             Select an assistant to start a conversation
           </p>
         </div>
+
+        {noModels && (
+          <div
+            role="alert"
+            className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3"
+          >
+            <TriangleAlert size={18} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500" />
+            <div className="text-sm">
+              <p className="font-medium text-foreground">No models configured yet</p>
+              {user?.is_admin ? (
+                <p className="text-muted-foreground mt-0.5">
+                  Add an LLM model in{" "}
+                  <Link href="/admin" className="font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300">
+                    Admin
+                  </Link>{" "}
+                  before starting a conversation, otherwise sending a message will fail.
+                </p>
+              ) : (
+                <p className="text-muted-foreground mt-0.5">
+                  Ask an admin to add an LLM model before starting a conversation, otherwise sending a message will fail.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">

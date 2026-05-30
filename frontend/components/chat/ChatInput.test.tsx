@@ -27,6 +27,20 @@ describe("ChatInput", () => {
     expect(screen.getByRole("button")).toBeDisabled()
   })
 
+  it("guards the empty catalog even without a picker (new-assistant landing)", async () => {
+    // The landing page renders ChatInput with `models` but no `onModelChange`
+    // (it owns its own ModelPicker). The empty-catalog guard must still engage.
+    render(
+      <ChatInput
+        onSubmit={vi.fn()} onStop={vi.fn()} isStreaming={false}
+        models={[]}
+      />,
+    )
+    expect(screen.getByText(/no model configured/i)).toBeInTheDocument()
+    await userEvent.type(screen.getByPlaceholderText(/message/i), "hello")
+    expect(screen.getByRole("button")).toBeDisabled()
+  })
+
   it("enables send after typing when models exist", async () => {
     render(
       <ChatInput
