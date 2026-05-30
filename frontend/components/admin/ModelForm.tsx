@@ -137,6 +137,17 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
               className="font-mono text-sm"
               disabled={!!model}
             />
+            <p className="text-xs text-muted-foreground">
+              Format{" "}
+              <code className="font-mono text-foreground/70">provider/model</code>{" "}
+              — the prefix is the LangChain integration that builds the client
+              (anthropic, openai, ollama, openrouter), not the vendor&apos;s
+              catalog label. For OpenRouter, keep their slug after the prefix:{" "}
+              <code className="font-mono text-foreground/70">
+                openrouter/openai/gpt-4.1-mini
+              </code>
+              .
+            </p>
             {errors.model_id && (
               <p className="text-xs text-destructive">{errors.model_id.message}</p>
             )}
@@ -153,6 +164,10 @@ export function ModelForm({ open, onClose, model }: ModelFormProps) {
                 className="font-mono text-sm"
               />
             )}
+            <p className="text-xs text-muted-foreground">
+              Label for display only — routing is driven by the{" "}
+              <code className="font-mono text-foreground/70">model_id</code> prefix.
+            </p>
             {errors.provider && (
               <p className="text-xs text-destructive">{errors.provider.message}</p>
             )}
