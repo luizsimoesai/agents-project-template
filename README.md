@@ -5,6 +5,9 @@ A production-ready, full-stack template for building AI agents on top of
 **[LangChain](https://python.langchain.com/)**, and
 **[DeepAgents](https://github.com/langchain-ai/deepagents)**.
 
+> **Go from `git clone` to a secure, multi-user AI agent chat app in minutes — skip the auth, persistence, and UI boilerplate and spend your time on the agent itself.**
+
+
 ## What this project is
 
 Instead of wiring authentication, persistence, model selection, and a chat UI from
@@ -56,6 +59,7 @@ flowchart TB
     subgraph Providers["LLM providers"]
         ANTH["Anthropic"]
         OAI["OpenAI"]
+        OR["OpenRouter"]
         OLL["Ollama (local)"]
     end
 
@@ -67,6 +71,7 @@ flowchart TB
     Agents --> MODEL
     MODEL --> ANTH
     MODEL --> OAI
+    MODEL --> OR
     MODEL --> OLL
     REST --> DB
     LG --> DB
@@ -300,3 +305,30 @@ uv run alembic upgrade head   # re-apply migrations
 | Database  | PostgreSQL + SQLAlchemy + Alembic                       |
 | Auth      | JWT — access + refresh, rotation with replay detection  |
 | Frontend  | Next.js 16 + React 19 + Tailwind v4                     |
+
+---
+
+## Contributing
+
+Contributions are welcome! Whether it's a bug fix, a new agent, or a docs
+improvement, here's the flow:
+
+1. **Open an issue first** for anything non-trivial, so we can align on the approach.
+2. **Fork** the repo and create a branch from `main` (e.g. `feat/my-change` or `fix/...`).
+3. **Make your change** and keep it covered by tests:
+   - Backend: `uv run task test` (runs lint + type-check + coverage) from `backend/`.
+   - Frontend: `npm run test:run` from `frontend/`.
+4. **Lint and format** before committing: `uv run task lint` and `uv run task format`.
+5. **Open a pull request** describing what changed and why. Keep PRs focused and small
+   where possible.
+
+New to the codebase? `CLAUDE.md` (root and `frontend/`) documents the architecture,
+conventions, and the quirks worth knowing before you start.
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE) — free to use, modify, and distribute,
+including commercially, as long as the copyright notice is retained. See the
+[`LICENSE`](LICENSE) file for the full text.
