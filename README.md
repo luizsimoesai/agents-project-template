@@ -72,6 +72,24 @@ flowchart TB
     LG --> DB
 ```
 
+## Screenshots
+
+> 📸 Images live in [`assets/screenshots/`](assets/screenshots/). Replace the
+> placeholders below with real captures (see that folder's README for the
+> suggested file names and sizes).
+
+| Login | Assistant picker |
+|-------|------------------|
+| ![Login screen](assets/screenshots/login.png) | ![Assistant picker](assets/screenshots/assistant-picker.png) |
+
+| Create an assistant | Chat with streaming |
+|---------------------|---------------------|
+| ![Create assistant dialog](assets/screenshots/create-assistant.png) | ![Chat with streaming response](assets/screenshots/chat.png) |
+
+| Admin · model catalogue |
+|-------------------------|
+| ![Admin model catalogue](assets/screenshots/admin-models.png) |
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose
@@ -120,103 +138,112 @@ The manual setup below remains documented for transparency.
 
 ---
 
-## Step by step: from clone to first agent
+## Step by step (manual setup)
 
-### 1. Set up the environment
+> Prefer the one-command path? The [Quick start](#quick-start-recommended) above runs
+> `task bootstrap`, which does steps 1, 4, and the admin promotion for you. The manual
+> flow below is documented for transparency and so you understand each moving part.
+
+### 1. Configure the backend environment
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Edit the `.env` and fill in at least:
+Fill in at least these — the server refuses to boot without the first three:
 
 - `JWT_SECRET_KEY` — minimum 32 characters (generate with `openssl rand -hex 32`)
-- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` — LLM provider key
+- `POSTGRES_PASSWORD` — any non-empty value (used to provision the local Postgres)
+- `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` — at least one LLM provider key
+- `COOKIE_SECURE=false` — required for the cookie-based auth flow over plain HTTP in dev
 
-### 2. Install dependencies
-
-```bash
-cd backend
-
-uv venv
-uv sync
-
-uv run aegra dev # or uv run task run
-```
-
+### 2. Install dependencies and start the backend
 
 ```bash
-# Server: http://localhost:2026
-# Docs (Swagger): http://localhost:2026/docs
+uv sync             # creates the virtualenv and installs everything
+uv run task run     # or: uv run aegra dev
 ```
+
+`task run` auto-starts PostgreSQL via Docker and applies migrations. The backend is now live:
+
+- API: <http://localhost:2026>
+- Swagger docs: <http://localhost:2026/docs>
+
+### 3. Start the frontend
+
+```bash
+cd ../frontend
+cp .env.example .env.local   # NEXT_PUBLIC_API_URL defaults to http://localhost:2026
+npm install
+npm run dev                  # http://localhost:3000
+```
+
+### 4. Create your account
+
+Open <http://localhost:3000>, go to **Sign up**, and register. (Via API: `POST /api/v1/auth/register`.)
+
+> Registration always creates a regular user (`is_admin=false`) by design. To reach the
+> admin panel and manage the model catalogue, promote your user — see
+> [Promote a user to admin](#promote-a-user-to-admin).
+
+### 5. Create your first assistant and chat
+
+On the **assistant picker**, choose an agent type (`basic_agent` or `deep_agent`), give it
+a name, pick a model from the catalogue, and start chatting.
+
+That's it — you now have a running, secure, multi-user agent chat. 🎉
 
 ---
 
-## Creating the first admin user
+## Promote a user to admin
 
-The `POST /api/v1/auth/register` endpoint is public but always creates regular users (`is_admin=false`). Admin promotion is done via SQL — this is intentional for security reasons.
-
-### Register the user
-
-```bash
-curl -X POST http://localhost:2026/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Admin", "email": "admin@example.com", "password": "password123!"}'
-```
-
-Or use the interface at `http://localhost:2026/docs` → `POST /api/v1/auth/register`.
-
-### Promote to admin via SQL
+Promotion is intentionally manual, via SQL, for security. **Skip this** if you used
+`task bootstrap` and created the admin through the wizard.
 
 ```bash
 docker exec -it backend-postgres psql -U backend -d backend \
   -c "UPDATE users SET is_admin = true WHERE email = 'admin@example.com';"
 ```
 
-### Log in and obtain the JWT
+---
+
+## Creating an assistant via the API (advanced)
+
+The UI is the easy path. If you'd rather use the raw
+[LangGraph API](https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref/)
+that Aegra exposes on the same port, first log in to obtain a token:
 
 ```bash
 curl -X POST http://localhost:2026/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "admin@example.com", "password": "password123!"}'
+# → { "access_token": "eyJ...", "refresh_token": "eyJ..." }
 ```
 
-Response:
-
-```json
-{
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ..."
-}
-```
-
----
-
-## Creating a new assistant (agent)
-
-Aegra exposes the [LangGraph API](https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref/) on the same port. The `agent` graph is registered in `aegra.json`.
+Then create the assistant against one of the registered graphs (`basic_agent` or
+`deep_agent` — see `aegra.json`):
 
 ```bash
 curl -X POST http://localhost:2026/assistants \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "graph_id": "agent",
+    "graph_id": "basic_agent",
     "name": "My Agent",
     "config": {
       "configurable": {
-        "model": "anthropic/claude-sonnet-4-6",
+        "model": "anthropic:claude-sonnet-4-6",
         "system_prompt": "You are a helpful assistant."
       }
     }
   }'
 ```
 
-Available models follow the `"provider/model"` format, e.g.:
-- `"anthropic/claude-sonnet-4-6"`
-- `"openai/gpt-4o-mini"`
-- `"ollama/llama3.2"` (requires local Ollama)
+Models accept both the `provider/model` and `provider:model` forms, e.g.:
+- `"anthropic:claude-sonnet-4-6"`
+- `"openai:gpt-4o-mini"`
+- `"ollama/llama3:8b"` (requires a local Ollama)
 
 ---
 
@@ -229,9 +256,9 @@ The template uses a two-file convention to expose new graphs to the end user:
 ```json
 {
   "graphs": {
-    "agent":      "./src/agent/graph.py:graph",
-    "deep_agent": "./src/agent/deepagents/graph.py:graph",
-    "my_agent":   "./src/agent/my_agent/graph.py:graph"
+    "basic_agent": "./src/agent/basic_agent/graph.py:graph",
+    "deep_agent":  "./src/agent/deep_agent/graph.py:graph",
+    "my_agent":    "./src/agent/my_agent/graph.py:graph"
   }
 }
 ```
@@ -265,10 +292,11 @@ uv run alembic upgrade head   # re-apply migrations
 
 ## Project stack
 
-| Layer     | Technology                        |
-|-----------|-----------------------------------|
-| Backend   | FastAPI + Aegra + LangGraph       |
-| Agent     | LangGraph ReAct (tools + LLM)     |
-| Database  | PostgreSQL + SQLAlchemy + Alembic |
-| Auth      | JWT (access + refresh tokens)     |
-| Frontend  | Next.js                           |
+| Layer     | Technology                                              |
+|-----------|---------------------------------------------------------|
+| Backend   | FastAPI + Aegra (self-hosted LangGraph API)             |
+| Agents    | LangChain `create_agent` · DeepAgents `create_deep_agent` |
+| Models    | LangChain `init_chat_model` (Anthropic · OpenAI · Ollama) |
+| Database  | PostgreSQL + SQLAlchemy + Alembic                       |
+| Auth      | JWT — access + refresh, rotation with replay detection  |
+| Frontend  | Next.js 16 + React 19 + Tailwind v4                     |
