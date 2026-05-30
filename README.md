@@ -1,6 +1,76 @@
 # agents-project-template
 
-LangGraph agent template with FastAPI backend, JWT authentication, and Next.js frontend.
+A production-ready, full-stack template for building AI agents on top of
+**[LangGraph](https://langchain-ai.github.io/langgraph/)**,
+**[LangChain](https://python.langchain.com/)**, and
+**[DeepAgents](https://github.com/langchain-ai/deepagents)**.
+
+## What this project is
+
+Instead of wiring authentication, persistence, model selection, and a chat UI from
+scratch every time you start a new agent, clone this template and get a complete,
+opinionated foundation that already works end to end:
+
+- **Two ready-to-use agents.** A `basic_agent` built with LangChain's `create_agent`
+  ReAct loop (tools + LLM), and a `deep_agent` built with **DeepAgents'**
+  `create_deep_agent` for planning and sub-agent delegation on complex, multi-step
+  tasks. Both are exposed through the LangGraph API.
+- **Runtime model selection across providers.** Swap the underlying LLM per assistant
+  without touching code — Anthropic, OpenAI, or a local Ollama model — through a
+  LangChain `init_chat_model` layer driven by configuration.
+- **Self-hosted LangGraph runtime.** [Aegra](https://github.com/aegra-dev/aegra)
+  serves the standard LangGraph API (threads, runs, assistants) alongside custom
+  FastAPI routes on a single port, with full streaming support.
+- **Production-grade auth & multi-tenancy.** Dual-layer JWT authentication, refresh
+  token rotation with replay detection, rate limiting, and per-user authorization so
+  every thread and assistant is scoped to its owner.
+- **Batteries-included tooling.** PostgreSQL with Alembic migrations, an LLM model
+  catalogue with an admin panel, and a one-command bootstrap wizard.
+
+The goal is simple: go from `git clone` to a running, secure, multi-user agent chat
+application in minutes, then focus your effort on the agent logic that makes your
+product unique.
+
+### Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["Frontend — Next.js 16 + React 19 (:3000)"]
+        UI["Chat UI · Assistant picker · Admin panel"]
+    end
+
+    subgraph Server["Backend — Aegra server (:2026)"]
+        direction TB
+        REST["FastAPI REST routes<br/>/api/v1/* — auth, users, model catalogue"]
+        LG["LangGraph API<br/>/threads · /runs · /assistants"]
+
+        subgraph Agents["Agents"]
+            direction LR
+            BASIC["basic_agent<br/>LangChain create_agent (ReAct)"]
+            DEEP["deep_agent<br/>DeepAgents create_deep_agent<br/>(planning + sub-agents)"]
+        end
+
+        MODEL["Model layer<br/>LangChain init_chat_model<br/>runtime provider selection"]
+    end
+
+    subgraph Providers["LLM providers"]
+        ANTH["Anthropic"]
+        OAI["OpenAI"]
+        OLL["Ollama (local)"]
+    end
+
+    DB[("PostgreSQL<br/>SQLAlchemy + Alembic")]
+
+    UI -->|"JWT · credentials: include"| REST
+    UI -->|"streaming (useStream)"| LG
+    LG --> Agents
+    Agents --> MODEL
+    MODEL --> ANTH
+    MODEL --> OAI
+    MODEL --> OLL
+    REST --> DB
+    LG --> DB
+```
 
 ## Prerequisites
 
