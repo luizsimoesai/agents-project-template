@@ -79,10 +79,6 @@ flowchart TB
 
 ## Screenshots
 
-> 📸 Images live in [`assets/screenshots/`](assets/screenshots/). Replace the
-> placeholders below with real captures (see that folder's README for the
-> suggested file names and sizes).
-
 | Login | Assistant picker |
 |-------|------------------|
 | ![Login screen](assets/screenshots/login.png) | ![Assistant picker](assets/screenshots/assistant-picker.png) |
