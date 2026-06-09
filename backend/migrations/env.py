@@ -2,7 +2,7 @@ import asyncio
 import threading
 from logging.config import fileConfig
 
-from sqlalchemy import pool, text
+from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -12,41 +12,6 @@ from src.core.settings import settings
 from src.models.user import table_registry
 from src.models.llm_model import LLMModel as _LLMModel  # noqa: F401 — registers table in metadata
 
-
-def _ensure_aegra_tables() -> None:
-    """Create Aegra's internal tables if they do not exist.
-
-    Aegra's migration resolver picks up the project's alembic.ini first,
-    so its own migration scripts (assistant, runs, threads, etc.) are never
-    applied on a fresh database. Using create_all(checkfirst=True) ensures
-    those tables are present before the project's migrations run, without
-    interfering with Alembic's version tracking.
-
-    Limitation: this handles missing *tables* (fresh DB). If a future Aegra
-    upgrade adds *columns* to existing tables, a `docker compose down -v` is
-    needed in development (or a manual ALTER TABLE in production) until Aegra
-    fixes the upstream bug in its migration resolver.
-    """
-    try:
-        from aegra_api.core.orm import Base as _AegraBase
-    except ImportError:
-        return
-
-    from sqlalchemy.ext.asyncio import create_async_engine
-
-    async def _create() -> None:
-        _engine = create_async_engine(settings.db_url)
-        try:
-            async with _engine.begin() as _conn:
-                await _conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
-                await _conn.run_sync(_AegraBase.metadata.create_all, checkfirst=True)
-        finally:
-            await _engine.dispose()
-
-    asyncio.run(_create())
-
-
-_ensure_aegra_tables()
 
 config = context.config
 
@@ -62,6 +27,13 @@ if config.config_file_name is not None and threading.current_thread() is threadi
     fileConfig(config.config_file_name)
 
 target_metadata = table_registry.metadata
+
+# Track this project's migrations in a dedicated version table. Aegra runs its
+# own bundled migration chain against the SAME database using the default
+# "alembic_version" table; if we shared it, whichever chain ran second would
+# read the other's revision id and abort with "Can't locate revision". A
+# separate table keeps the two independent chains from colliding.
+VERSION_TABLE = "alembic_version_app"
 
 # Only manage tables that are explicitly defined in our models.
 # This prevents autogenerate from generating DROP TABLE statements for
@@ -85,6 +57,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         include_object=include_object,
+        version_table=VERSION_TABLE,
     )
 
     with context.begin_transaction():
@@ -96,6 +69,7 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         include_object=include_object,
+        version_table=VERSION_TABLE,
     )
 
     with context.begin_transaction():
