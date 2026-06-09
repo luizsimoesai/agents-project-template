@@ -154,14 +154,23 @@ Fill in at least these — the server refuses to boot without the first three:
 - `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` — at least one LLM provider key
 - `COOKIE_SECURE=false` — required for the cookie-based auth flow over plain HTTP in dev
 
-### 2. Install dependencies and start the backend
+### 2. Install dependencies, start the backend, and apply migrations
 
 ```bash
 uv sync             # creates the virtualenv and installs everything
-uv run task run     # or: uv run aegra dev
+uv run task run     # or: uv run aegra dev — starts PostgreSQL (Docker) + the backend
 ```
 
-`task run` auto-starts PostgreSQL via Docker and applies migrations. The backend is now live:
+`task run` boots the backend and applies **Aegra's own** migrations (the LangGraph
+tables: threads, runs, assistants, …). This project keeps its tables (`users`,
+`llm_models`) in a separate Alembic chain — apply them in a second terminal once
+Postgres is up:
+
+```bash
+uv run alembic upgrade head
+```
+
+The backend is now live:
 
 - API: <http://localhost:2026>
 - Swagger docs: <http://localhost:2026/docs>
@@ -280,9 +289,12 @@ The assistant creation select uses this array — adding an entry here makes the
 
 ```bash
 docker compose down -v        # stop and remove the volume
-docker compose up postgres -d # recreate the container
-uv run alembic upgrade head   # re-apply migrations
+docker compose up postgres -d # recreate the empty database
+uv run alembic upgrade head   # re-apply this project's migrations (users, llm_models)
 ```
+
+> Aegra's own tables (threads, runs, assistants, …) are recreated automatically the
+> next time the backend starts (`task run`).
 
 ---
 
