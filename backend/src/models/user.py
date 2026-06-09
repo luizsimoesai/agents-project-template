@@ -17,7 +17,7 @@ class User:
         init=False,
         primary_key=True,
         default_factory=uuid.uuid4,
-        server_default=func.uuid_generate_v4(),
+        server_default=func.gen_random_uuid(),
     )
     email: Mapped[str] = mapped_column(
         String,
