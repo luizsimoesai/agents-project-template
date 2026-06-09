@@ -14,7 +14,7 @@ Full-stack LangGraph agent template: FastAPI + [Aegra](https://github.com/aegra-
 # Install dependencies
 uv sync
 
-# Start dev server (auto-starts PostgreSQL via Docker, runs migrations)
+# Start dev server (auto-starts PostgreSQL via Docker, runs Aegra's own migrations)
 uv run aegra dev
 
 # Lint + type-check
@@ -27,7 +27,7 @@ task test
 # Single test file
 uv run pytest tests/test_auth_service.py -s -x -vv
 
-# Database migrations
+# Database migrations (this project's chain only — users/llm_models; Aegra runs its own on startup)
 uv run alembic upgrade head
 uv run alembic revision --autogenerate -m "description"
 uv run alembic heads   # check for multiple heads (parallel branches)
@@ -112,7 +112,9 @@ Aegra authorization (`src/auth/jwt.py`) scopes every thread/assistant operation 
 
 PostgreSQL via SQLAlchemy async (asyncpg driver). Alembic migrations in `backend/migrations/versions/`. Current chain: `95ddd19a5855` → `b3e9f1a2c4d5` → `3189b185e75b` → `c4f7d2a8e1b3`. The `settings.db_url` computed field builds the asyncpg connection string from individual env vars or falls back to `DATABASE_URL`.
 
-When adding a migration, set `down_revision` to the current `alembic heads` output — otherwise you create a parallel branch and Aegra's startup blocks with `MultipleHeads`.
+**Two independent migration chains share the database.** Aegra (≥0.9.20) runs its *own* bundled migrations on server startup, tracked in the default `alembic_version` table, creating the LangGraph tables (threads, runs, assistants, checkpoints, …). This project's migrations are a *separate* chain — run via `uv run alembic upgrade head` (or `task bootstrap`), tracked in a dedicated `alembic_version_app` table (set via `version_table` in `migrations/env.py`), creating only `users` / `llm_models`. The separate version table is required: sharing the default makes whichever chain runs second abort with `Can't locate revision`. `include_object` in `env.py` keeps the project chain from touching Aegra-owned tables. Consequence: `aegra dev` alone does **not** create the project tables — run `alembic upgrade head` too. (Before Aegra 0.9.20, the buggy `find_alembic_ini` made Aegra run the *project's* alembic.ini at startup, which masked this; a now-removed `_ensure_aegra_tables()` workaround in `env.py` create_all'd the Aegra tables.)
+
+When adding a migration, set `down_revision` to the current `alembic heads` output — otherwise you create a parallel branch in this project's chain and `alembic upgrade head` (and `task bootstrap`) fails with `MultipleHeads`. The `uuid-ossp` extension that `llm_models` needs for `uuid_generate_v4()` is created by migration `3189b185e75b` itself (Aegra no longer provides it).
 
 ## Key Configuration Files
 
