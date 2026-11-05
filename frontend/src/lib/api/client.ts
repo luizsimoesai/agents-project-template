@@ -27,7 +27,7 @@ async function doRefresh(): Promise<boolean> {
       return false
     }
     const user = await meRes.json()
-    useAuthStore.getState().setAuth(data.access_token, user, data.expires_in)
+    useAuthStore.getState().setAuth(data.access_token, user)
     return true
   } catch {
     return false

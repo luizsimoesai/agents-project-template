@@ -1,15 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
+import { describe, it, expect, beforeEach } from "vitest"
 import { useAuthStore } from "./auth"
-
-// Cookie mock
-vi.stubGlobal("document", {
-  cookie: "",
-})
 
 describe("useAuthStore", () => {
   beforeEach(() => {
     useAuthStore.setState({ accessToken: null, user: null })
-    document.cookie = ""
   })
 
   it("starts with no auth", () => {
@@ -42,5 +36,19 @@ describe("useAuthStore", () => {
     const state = useAuthStore.getState()
     expect(state.accessToken).toBeNull()
     expect(state.user).toBeNull()
+  })
+
+  it("keeps the access token out of cookies", () => {
+    useAuthStore.getState().setAuth("tok123", {
+      id: "1", name: "Alice", email: "alice@example.com",
+      is_admin: false, is_active: true, created_at: "2026-01-01T00:00:00Z",
+    })
+    expect(document.cookie).toBe("")
+  })
+
+  it("clearAuth removes the legacy refresh token from localStorage", () => {
+    localStorage.setItem("refresh_token", "legacy")
+    useAuthStore.getState().clearAuth()
+    expect(localStorage.getItem("refresh_token")).toBeNull()
   })
 })

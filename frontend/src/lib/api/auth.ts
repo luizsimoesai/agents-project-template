@@ -16,10 +16,10 @@ export async function login(email: string, password: string): Promise<void> {
     throw new Error(detail)
   }
   // The refresh token is now an HttpOnly cookie set by the server response;
-  // we only see access_token + expires_in in the body.
+  // we only see access_token in the body.
   const data = await res.json()
   const user = await getMe(data.access_token)
-  useAuthStore.getState().setAuth(data.access_token, user, data.expires_in)
+  useAuthStore.getState().setAuth(data.access_token, user)
 }
 
 export async function logout(): Promise<void> {

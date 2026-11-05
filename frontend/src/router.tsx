@@ -1,4 +1,5 @@
 import { Navigate, type RouteObject } from "react-router"
+import { RequireAuth, RequireGuest } from "@/components/auth/RouteGuards"
 import AdminPage from "@/routes/AdminPage"
 import AssistantDetailPage from "@/routes/AssistantDetailPage"
 import AssistantPickerPage from "@/routes/AssistantPickerPage"
@@ -24,28 +25,38 @@ export const routes: RouteObject[] = [
         errorElement: <RouteError />,
         children: [
           {
-            element: <AuthLayout />,
+            element: <RequireGuest />,
             children: [
-              { path: "login", element: <LoginPage /> },
-              { path: "signup", element: <SignupPage /> },
+              {
+                element: <AuthLayout />,
+                children: [
+                  { path: "login", element: <LoginPage /> },
+                  { path: "signup", element: <SignupPage /> },
+                ],
+              },
             ],
           },
-          { index: true, element: <Navigate to="/assistants" replace /> },
           {
-            element: <PickerLayout />,
-            children: [{ path: "assistants", element: <AssistantPickerPage /> }],
-          },
-          {
-            element: <ChatLayout />,
+            element: <RequireAuth />,
             children: [
-              { path: "profile", element: <ProfilePage /> },
-              { path: "admin", element: <AdminPage /> },
-              { path: "assistants/:id", element: <AssistantDetailPage /> },
-              { path: "assistants/:id/threads", element: <ThreadsListPage /> },
-              { path: "assistants/:id/threads/:threadId", element: <ChatPage /> },
+              { index: true, element: <Navigate to="/assistants" replace /> },
+              {
+                element: <PickerLayout />,
+                children: [{ path: "assistants", element: <AssistantPickerPage /> }],
+              },
+              {
+                element: <ChatLayout />,
+                children: [
+                  { path: "profile", element: <ProfilePage /> },
+                  { path: "admin", element: <AdminPage /> },
+                  { path: "assistants/:id", element: <AssistantDetailPage /> },
+                  { path: "assistants/:id/threads", element: <ThreadsListPage /> },
+                  { path: "assistants/:id/threads/:threadId", element: <ChatPage /> },
+                ],
+              },
+              { path: "*", element: <NotFound /> },
             ],
           },
-          { path: "*", element: <NotFound /> },
         ],
       },
     ],
