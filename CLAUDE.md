@@ -65,7 +65,7 @@ JWT-based dual-layer auth:
 **Token storage**
 - **Access token**: returned in the `/auth/login` response body and held only in memory, in Zustand (`src/lib/store/auth.ts`). It is never written to a cookie or to browser storage.
 - **Refresh token**: set by the server as an `HttpOnly; Secure; SameSite=Lax` cookie scoped to `Path=/api/v1/auth`. JS never reads it. The browser includes it automatically on `/auth/refresh` and `/auth/logout` because every fetch sends `credentials: "include"`.
-- **Session restore**: on load, `AuthProvider` calls `/auth/refresh` once and renders a loading state until it settles, so no route or guard runs before the session is known.
+- **Session restore**: on load, `AuthProvider` calls `/auth/refresh` once and renders a loading state until it settles, so no route or guard runs before the session is known. If the backend does not answer within 8 seconds, the routes open as signed out; a late success still restores the session. The fetch is never aborted, because losing a rotated cookie would trigger replay detection.
 
 **Refresh-token rotation with replay detection**: every refresh JWT carries a `jti` claim that must match `users.refresh_jti`. On each `/auth/refresh` the server rotates `refresh_jti`; presenting a stale `jti` (replay / theft) is rejected AND the stored `jti` is cleared, forcing even the legitimate session to re-login.
 

@@ -81,6 +81,21 @@ describe("route protection", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/assistants"))
   })
 
+  it("recovers the session when the refresh answers after the wait", async () => {
+    let answer: (response: Response) => void = () => {}
+    stubBackend(() => new Promise<Response>((resolve) => { answer = resolve }))
+    vi.useFakeTimers()
+    const { router } = renderAt("/assistants")
+
+    act(() => { vi.advanceTimersByTime(8000) })
+    vi.useRealTimers()
+    await screen.findByText("Welcome back")
+
+    answer(json({ access_token: "tok", expires_in: 3600 }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/assistants"))
+  })
+
   it("keeps a deep link after restoring the session", async () => {
     stubBackend(validSession)
     const { router, visited } = renderAt("/profile")

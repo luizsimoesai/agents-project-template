@@ -1,6 +1,6 @@
 import { StrictMode } from "react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import { AuthProvider } from "./AuthProvider"
 import { useAuthStore } from "@/lib/store/auth"
 
@@ -33,6 +33,7 @@ describe("AuthProvider", () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
@@ -67,6 +68,46 @@ describe("AuthProvider", () => {
     // Settling also releases the module-level single-flight in client.ts.
     settle(json({ detail: "nope" }, 401))
     await screen.findByText("app")
+  })
+
+  describe("when the backend never answers", () => {
+    let settle: (response: Response) => void = () => {}
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => new Promise<Response>((resolve) => { settle = resolve })),
+      )
+    })
+
+    it("stops waiting after 8 seconds", async () => {
+      renderProvider()
+
+      act(() => { vi.advanceTimersByTime(7999) })
+      expect(screen.queryByText("app")).not.toBeInTheDocument()
+
+      act(() => { vi.advanceTimersByTime(1) })
+      expect(screen.getByText("app")).toBeInTheDocument()
+
+      vi.useRealTimers()
+      settle(json({ detail: "nope" }, 401))
+      await waitFor(() => expect(useAuthStore.getState().accessToken).toBeNull())
+    })
+
+    it("does not let a late failure end a newer login", async () => {
+      renderProvider()
+      act(() => { vi.advanceTimersByTime(8000) })
+      useAuthStore.setState({ accessToken: "fresh-login", user })
+
+      vi.useRealTimers()
+      await act(async () => {
+        settle(json({ detail: "nope" }, 401))
+        await new Promise((resolve) => setTimeout(resolve))
+      })
+
+      expect(useAuthStore.getState().accessToken).toBe("fresh-login")
+    })
   })
 
   it("skips the refresh when a token is already in memory", async () => {
