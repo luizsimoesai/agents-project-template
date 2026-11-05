@@ -38,7 +38,7 @@ product unique.
 
 ```mermaid
 flowchart TB
-    subgraph Client["Frontend — Next.js 16 + React 19 (:3000)"]
+    subgraph Client["Frontend — Vite + React Router + React 19 (:3000)"]
         UI["Chat UI · Assistant picker · Admin panel"]
     end
 
@@ -179,7 +179,7 @@ The backend is now live:
 
 ```bash
 cd ../frontend
-cp .env.example .env.local   # NEXT_PUBLIC_API_URL defaults to http://localhost:2026
+cp .env.example .env.local   # VITE_API_URL defaults to http://localhost:2026
 npm install
 npm run dev                  # http://localhost:3000
 ```
@@ -268,7 +268,7 @@ The template uses a two-file convention to expose new graphs to the end user:
 }
 ```
 
-**2. Add the description in the frontend** (`frontend/lib/graph-types.ts`):
+**2. Add the description in the frontend** (`frontend/src/lib/graph-types.ts`):
 
 ```ts
 export const GRAPH_TYPES: GraphType[] = [
@@ -307,7 +307,24 @@ uv run alembic upgrade head   # re-apply this project's migrations (users, llm_m
 | Models    | LangChain `init_chat_model` (Anthropic · OpenAI · Ollama) |
 | Database  | PostgreSQL + SQLAlchemy + Alembic                       |
 | Auth      | JWT — access + refresh, rotation with replay detection  |
-| Frontend  | Next.js 16 + React 19 + Tailwind v4                     |
+| Frontend  | Vite + React Router + React 19 + Tailwind v4            |
+
+---
+
+## Deploying the frontend
+
+`npm run build` in `frontend/` generates static files in `dist/`. `VITE_API_URL` is read at build time, so set it before building.
+
+Any static server works, as long as it falls back to `index.html` for unknown paths, so that reloading a route like `/assistants/123` keeps working. With Nginx:
+
+```nginx
+location / {
+  root /var/www/agent-studio;
+  try_files $uri /index.html;
+}
+```
+
+Add the frontend origin to the CORS settings in `backend/aegra.json`.
 
 ---
 

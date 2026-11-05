@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Full-stack LangGraph agent template: FastAPI + [Aegra](https://github.com/aegra-dev/aegra) backend serving both custom REST endpoints and the LangGraph API, with a Next.js 16 frontend. The backend runs on port **2026**; the frontend on port **3000**.
+Full-stack LangGraph agent template: FastAPI + [Aegra](https://github.com/aegra-dev/aegra) backend serving both custom REST endpoints and the LangGraph API, with a Vite + React Router SPA frontend. The backend runs on port **2026**; the frontend on port **3000**.
 
 ## Commands
 
@@ -39,8 +39,9 @@ docker compose down -v && docker compose up postgres -d && uv run alembic upgrad
 ### Frontend (run from `frontend/`)
 
 ```bash
-npm run dev        # Next.js dev server on :3000
-npm run build
+npm run dev        # Vite dev server on :3000
+npm run build      # type-check + static build to dist/
+npm run preview    # serve dist/ on :3000
 npm test           # vitest (watch mode)
 npm run test:run   # vitest (single run)
 ```
@@ -53,7 +54,7 @@ All traffic flows through a single Aegra server on port 2026:
 - `/api/v1/*` → custom FastAPI routes (auth, user CRUD, model catalog)
 - `/threads`, `/runs`, `/assistants` → Aegra's LangGraph API (proxied directly)
 
-The frontend's `apiClient` (`frontend/lib/api/client.ts`) sends every request with `credentials: "include"` to `NEXT_PUBLIC_API_URL` (default: `http://localhost:2026`). Route protection lives in `frontend/proxy.ts` (Next.js 16 renamed middleware to `proxy.ts`) and gates by `access_token` cookie presence.
+The frontend's `apiClient` (`frontend/src/lib/api/client.ts`) sends every request with `credentials: "include"` to `VITE_API_URL` (default: `http://localhost:2026`). Route protection is client-side: `RequireAuth` and `RequireGuest` (`frontend/src/components/auth/RouteGuards.tsx`) gate on the in-memory access token.
 
 ### Auth Architecture
 
@@ -62,8 +63,9 @@ JWT-based dual-layer auth:
 2. **Aegra/LangGraph layer** (`src/auth/jwt.py`): `@auth.authenticate` validates the same tokens AND re-checks the user exists and `is_active` against the DB on every call. Admins receive `permissions: ["admin", "authenticated"]`.
 
 **Token storage**
-- **Access token**: returned in `/auth/login` response body, mirrored to a non-HttpOnly cookie (`access_token`) so `proxy.ts` can read it for route gating, plus held in Zustand (`lib/store/auth.ts`).
+- **Access token**: returned in the `/auth/login` response body and held only in memory, in Zustand (`src/lib/store/auth.ts`). It is never written to a cookie or to browser storage.
 - **Refresh token**: set by the server as an `HttpOnly; Secure; SameSite=Lax` cookie scoped to `Path=/api/v1/auth`. JS never reads it. The browser includes it automatically on `/auth/refresh` and `/auth/logout` because every fetch sends `credentials: "include"`.
+- **Session restore**: on load, `AuthProvider` calls `/auth/refresh` once and renders a loading state until it settles, so no route or guard runs before the session is known. If the backend does not answer within 8 seconds, the routes open as signed out; a late success still restores the session. The fetch is never aborted, because losing a rotated cookie would trigger replay detection.
 
 **Refresh-token rotation with replay detection**: every refresh JWT carries a `jti` claim that must match `users.refresh_jti`. On each `/auth/refresh` the server rotates `refresh_jti`; presenting a stale `jti` (replay / theft) is rejected AND the stored `jti` is cleared, forcing even the legitimate session to re-login.
 
@@ -95,17 +97,17 @@ Tool docstrings ARE the prompt the LLM sees — keep them descriptive (inputs, o
 
 ### Thread / Assistant Quirk
 
-Aegra overwrites the `assistant_id` field in thread metadata after each run (tracks last-used). To pin a thread to its original assistant the frontend stores `thread_assistant_id` in metadata instead — see `frontend/lib/api/threads.ts` and `frontend/lib/hooks/useThreads.ts`.
+Aegra overwrites the `assistant_id` field in thread metadata after each run (tracks last-used). To pin a thread to its original assistant the frontend stores `thread_assistant_id` in metadata instead — see `frontend/src/lib/api/threads.ts` and `frontend/src/lib/hooks/useThreads.ts`.
 
 Aegra authorization (`src/auth/jwt.py`) scopes every thread/assistant operation to `metadata.owner == ctx.user.identity`. Filter handlers are installed for `read`, `update`, `delete`, `search`, and `create_run` on both resources. Without these, any authenticated user could list everyone's threads.
 
 ### Frontend Structure
 
-- **Route groups**: `(auth)` for login/signup, `(app)/(picker)` for the assistant selection screen, `(app)/(chat)` for the chat interface + admin.
-- **State**: Zustand for auth (`lib/store/auth.ts`), TanStack Query for server state (assistants, threads, users, models).
-- **API layer**: `lib/api/` modules wrap `apiClient` from `lib/api/client.ts`. `apiClient` automatically attaches the Bearer token, sends `credentials: "include"`, and handles 401 → refresh → retry. On refresh failure it throws `ApiAuthError` and navigates to `/login`.
-- **Logout**: `lib/api/auth.ts` `logout()` calls `POST /auth/logout` (invalidates `refresh_jti` + clears the cookie) then `clearAuth()`.
-- **Streaming**: chat components use `useStream` from `@langchain/langgraph-sdk/react` directly. `apiUrl` is imported from `lib/api/client.ts` so it stays aligned with REST calls.
+- **Routes**: the tree lives in `src/router.tsx` (React Router data mode); pages and layouts live in `src/routes/`. `AuthLayout` wraps login/signup, `PickerLayout` the assistant selection screen, `ChatLayout` the chat interface, profile and admin.
+- **State**: Zustand for auth (`src/lib/store/auth.ts`), TanStack Query for server state (assistants, threads, users, models).
+- **API layer**: `src/lib/api/` modules wrap `apiClient` from `src/lib/api/client.ts`. `apiClient` automatically attaches the Bearer token, sends `credentials: "include"`, and handles 401 → refresh → retry. On refresh failure it throws `ApiAuthError` and navigates to `/login`.
+- **Logout**: `src/lib/api/auth.ts` `logout()` calls `POST /auth/logout` (invalidates `refresh_jti` + clears the cookie) then `clearAuth()`.
+- **Streaming**: chat components use `useStream` from `@langchain/langgraph-sdk/react` directly. `apiUrl` is imported from `src/lib/api/client.ts` so it stays aligned with REST calls.
 - **UI**: shadcn/ui components (Base UI primitives) + Tailwind CSS v4.
 
 ### Database
@@ -120,7 +122,7 @@ When adding a migration, set `down_revision` to the current `alembic heads` outp
 
 - `backend/aegra.json` — registers the FastAPI app, LangGraph graphs, CORS, and the JWT auth handler. CORS allows `http://localhost:3000` with `allow_credentials: true` (required for the HttpOnly cookie flow).
 - `backend/.env` — copy from `.env.example`. **Required** (no defaults — `Settings()` refuses to boot without these): `JWT_SECRET_KEY` (≥32 chars, generate with `openssl rand -hex 32`), `POSTGRES_PASSWORD`, at least one LLM API key. Set `COOKIE_SECURE=false` for HTTP dev.
-- `frontend/.env.example` — copy to `.env.local`; set `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:2026`).
+- `frontend/.env.example` — copy to `.env.local`; set `VITE_API_URL` (defaults to `http://localhost:2026`).
 - `backend/pyproject.toml` — ruff strict (`I, F, E, W, PL, PT, FAST`), mypy strict, taskipy tasks. Tests are excluded from mypy via `[[tool.mypy.overrides]]`.
 
 ## Testing notes
@@ -130,11 +132,9 @@ When adding a migration, set `down_revision` to the current `alembic heads` outp
 - Aegra auth handler tests (`tests/test_auth_handler.py`) mock `src.auth.jwt._fetch_active_user` since the real function requires a live Aegra DB.
 - Frontend tests use Vitest (`npm run test:run`). The client-refresh tests mock `fetch` and `localStorage`; pay attention to module-level state (`refreshPromise` in `client.ts`) when adding tests.
 
-## Next.js Version Note
+## Frontend Routing Notes
 
-This project uses **Next.js 16.2.1** with React 19. APIs and conventions differ from earlier versions:
-- Middleware file is `proxy.ts` (renamed in Next 16).
-- `params` and `searchParams` are Promises since Next 15 — `await` them in server components.
-- `forwardRef` is no longer needed in React 19 (refs are auto-forwarded).
-
-Read `node_modules/next/dist/docs/` before writing Next.js-specific code. The `frontend/AGENTS.md` reinforces this.
+- `ChatLayout` keys `<main>` by pathname so pages remount when a route param changes. `ChatView` keeps per-thread state in refs and depends on this. Query-string changes must not remount it: removing `?msg=` happens while the first message is streaming.
+- Render at most one `<title>` at a time. React inserts it before the default title from `index.html`, so nested titles conflict. `ChatLayout` owns the dynamic ones.
+- The `*` route sits inside `RequireAuth`: unknown URLs send guests to `/login`, not to the 404 page.
+- React Compiler runs through `@rolldown/plugin-babel` in `vite.config.ts`, because `@vitejs/plugin-react` 6 has no `babel` option.

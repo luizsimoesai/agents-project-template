@@ -1,0 +1,221 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-inter);
+  --font-heading: var(--font-inter);
+  --color-brand: var(--brand);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ============================================================
+   SUNNY BEACH DAY — Vintage Palette
+   Charcoal Blue  #264653
+   Verdigris      #2a9d8f
+   Jasmine        #e9c46a
+   Sandy Brown    #f4a261
+   Burnt Peach    #e76f51
+   ============================================================ */
+
+:root {
+  --font-inter: "Inter Variable";
+  /* Brand: Verdigris */
+  --brand: #2a9d8f;
+
+  /* Backgrounds: warm sand tint */
+  --background: oklch(0.96 0.018 85);      /* off-white warm sand */
+  --foreground: oklch(0.20 0.030 220);     /* Charcoal Blue-ish dark */
+
+  /* Cards */
+  --card: oklch(0.99 0.008 85);
+  --card-foreground: oklch(0.20 0.030 220);
+
+  /* Popovers */
+  --popover: oklch(0.99 0.008 85);
+  --popover-foreground: oklch(0.20 0.030 220);
+
+  /* Primary: Verdigris */
+  --primary: oklch(0.58 0.098 185);        /* #2a9d8f */
+  --primary-foreground: oklch(0.98 0.005 85);
+
+  /* Secondary: Jasmine golden */
+  --secondary: oklch(0.88 0.072 80);       /* warm jasmine tint */
+  --secondary-foreground: oklch(0.22 0.030 220);
+
+  /* Muted: light sandy */
+  --muted: oklch(0.91 0.022 80);
+  --muted-foreground: oklch(0.48 0.028 200);
+
+  /* Accent: Sandy Brown */
+  --accent: oklch(0.78 0.095 55);          /* #f4a261 softened */
+  --accent-foreground: oklch(0.18 0.030 220);
+
+  /* Destructive: Burnt Peach */
+  --destructive: oklch(0.62 0.148 35);     /* #e76f51 */
+
+  /* Borders & inputs */
+  --border: oklch(0.82 0.030 75);
+  --input: oklch(0.82 0.030 75);
+
+  /* Ring: Verdigris glow */
+  --ring: oklch(0.58 0.098 185 / 35%);
+
+  /* Charts: full palette spectrum */
+  --chart-1: oklch(0.58 0.098 185);        /* Verdigris */
+  --chart-2: oklch(0.78 0.115 75);         /* Jasmine */
+  --chart-3: oklch(0.72 0.118 50);         /* Sandy Brown */
+  --chart-4: oklch(0.62 0.148 35);         /* Burnt Peach */
+  --chart-5: oklch(0.32 0.055 220);        /* Charcoal Blue */
+
+  --radius: 0.5rem;
+
+  /* Sidebar: warm charcoal sand */
+  --sidebar: oklch(0.92 0.020 80);
+  --sidebar-foreground: oklch(0.20 0.030 220);
+  --sidebar-primary: oklch(0.58 0.098 185);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.86 0.030 78);
+  --sidebar-accent-foreground: oklch(0.22 0.030 220);
+  --sidebar-border: oklch(0.80 0.025 78);
+  --sidebar-ring: oklch(0.58 0.098 185 / 30%);
+}
+
+.dark {
+  /* Dark slate — medium-dark grays with a subtle cool tint */
+  --background: oklch(0.21 0.010 230);     /* dark slate gray */
+  --foreground: oklch(0.95 0.008 75);      /* near-white, slightly warm */
+
+  --card: oklch(0.24 0.010 225);
+  --card-foreground: oklch(0.95 0.008 75);
+
+  --popover: oklch(0.25 0.010 225);
+  --popover-foreground: oklch(0.95 0.008 75);
+
+  /* Primary: brighter Verdigris for dark bg */
+  --primary: oklch(0.66 0.110 185);
+  --primary-foreground: oklch(0.15 0.020 220);
+
+  /* Secondary: muted slate */
+  --secondary: oklch(0.28 0.012 225);
+  --secondary-foreground: oklch(0.90 0.010 75);
+
+  /* Muted */
+  --muted: oklch(0.27 0.010 225);
+  --muted-foreground: oklch(0.72 0.014 200);
+
+  /* Accent: Sandy Brown warm on dark */
+  --accent: oklch(0.72 0.118 50);
+  --accent-foreground: oklch(0.15 0.020 220);
+
+  /* Destructive: Burnt Peach stays vivid */
+  --destructive: oklch(0.66 0.155 35);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.66 0.110 185 / 35%);
+
+  /* Charts: palette on dark */
+  --chart-1: oklch(0.66 0.110 185);        /* Verdigris */
+  --chart-2: oklch(0.80 0.118 78);         /* Jasmine */
+  --chart-3: oklch(0.74 0.125 52);         /* Sandy Brown */
+  --chart-4: oklch(0.66 0.155 35);         /* Burnt Peach */
+  --chart-5: oklch(0.55 0.065 220);        /* Charcoal Blue muted */
+
+  --sidebar: oklch(0.18 0.010 230);
+  --sidebar-foreground: oklch(0.93 0.008 75);
+  --sidebar-primary: oklch(0.66 0.110 185);
+  --sidebar-primary-foreground: oklch(0.15 0.020 220);
+  --sidebar-accent: oklch(0.25 0.010 225);
+  --sidebar-accent-foreground: oklch(0.92 0.008 75);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.66 0.110 185 / 35%);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.70 0.020 200 / 40%) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: oklch(0.45 0.010 225 / 50%) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: oklch(0.70 0.020 200 / 40%);
+    border-radius: 9999px;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background-color: oklch(0.45 0.010 225 / 50%);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(0.58 0.098 185 / 60%);
+  }
+  html {
+    @apply font-sans;
+    font-size: 17px;
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+}
