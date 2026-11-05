@@ -1,15 +1,13 @@
-"use client"
-
 import { useAuthStore } from "@/lib/store/auth"
 import { AdminUserTable } from "@/components/admin/AdminUserTable"
 import { AdminModelTable } from "@/components/admin/AdminModelTable"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router"
 
 export default function AdminPage() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
 
   if (!user?.is_admin) {
@@ -19,7 +17,7 @@ export default function AdminPage() {
         <p className="font-mono text-sm text-muted-foreground">
           restricted to administrators
         </p>
-        <Button variant="outline" onClick={() => router.push("/assistants")}>
+        <Button variant="outline" onClick={() => navigate("/assistants")}>
           go back
         </Button>
       </div>

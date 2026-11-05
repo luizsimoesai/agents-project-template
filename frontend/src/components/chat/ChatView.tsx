@@ -1,8 +1,5 @@
-"use client"
-
-import type { Route } from "next"
 import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router"
 import { useStream } from "@langchain/langgraph-sdk/react"
 import { toast } from "sonner"
 import { ChatMessage } from "./ChatMessage"
@@ -86,7 +83,7 @@ export function ChatView({
 }: ChatViewProps) {
   const accessToken = useAuthStore((s) => s.accessToken)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
+  const navigate = useNavigate()
   const initialMessageSent = useRef(false)
   const threadNameSet = useRef(false)
   const updateThreadName = useUpdateThreadName()
@@ -168,7 +165,7 @@ export function ChatView({
           }
         : undefined
     )
-    router.replace(window.location.pathname as Route, { scroll: false })
+    navigate(window.location.pathname, { replace: true, preventScrollReset: true })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // After the first AI response lands, name the thread from the first human message

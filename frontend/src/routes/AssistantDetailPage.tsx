@@ -1,6 +1,4 @@
-"use client"
-
-import { useParams } from "next/navigation"
+import { useParams } from "react-router"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
@@ -9,7 +7,7 @@ import { AssistantForm } from "@/components/assistants/AssistantForm"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AssistantDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useParams() as { id: string }
   const { data: assistants, isLoading } = useAssistants()
   const assistant = assistants?.find((a) => a.assistant_id === id)
   const [editOpen, setEditOpen] = useState(false)

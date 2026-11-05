@@ -1,7 +1,5 @@
-"use client"
-
 import { useState } from "react"
-import Link from "next/link"
+import { Link } from "react-router"
 import { toast } from "sonner"
 import { Pencil, Trash2, Plus, TriangleAlert } from "lucide-react"
 
@@ -79,7 +77,7 @@ export default function AssistantPickerPage() {
               {user?.is_admin ? (
                 <p className="text-muted-foreground mt-0.5">
                   Add an LLM model in{" "}
-                  <Link href="/admin" className="font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300">
+                  <Link to="/admin" className="font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300">
                     Admin
                   </Link>{" "}
                   before starting a conversation, otherwise sending a message will fail.
@@ -104,7 +102,7 @@ export default function AssistantPickerPage() {
             {assistants?.map((a) => (
               <Link
                 key={a.assistant_id}
-                href={`/assistants/${a.assistant_id}/threads`}
+                to={`/assistants/${a.assistant_id}/threads`}
                 aria-label={`Select ${a.name}`}
                 className="group relative bg-card border border-border/60 rounded-lg p-5 text-left cursor-pointer hover:border-[#2a9d8f]/50 hover:bg-[#2a9d8f]/5 transition-colors min-h-40 flex flex-col no-underline text-inherit"
               >

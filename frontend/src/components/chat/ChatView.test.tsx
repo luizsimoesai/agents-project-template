@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createElement } from "react"
+import { MemoryRouter } from "react-router"
 import { ChatView } from "./ChatView"
 import type { AssistantRead, ModelRead, ThreadRead } from "@/lib/types"
 
@@ -21,10 +22,6 @@ vi.mock("@langchain/langgraph-sdk/react", () => ({
     isLoading: false,
     stop: () => {},
   }),
-}))
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn() }),
 }))
 
 const updateMetadataMock = vi.fn().mockResolvedValue({})
@@ -81,7 +78,7 @@ const assistant: AssistantRead = {
 
 function wrap(ui: React.ReactElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(createElement(QueryClientProvider, { client }, ui))
+  return render(createElement(MemoryRouter, null, createElement(QueryClientProvider, { client }, ui)))
 }
 
 beforeEach(() => {

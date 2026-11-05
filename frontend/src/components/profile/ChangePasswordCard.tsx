@@ -1,9 +1,7 @@
-"use client"
-
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +27,7 @@ const schema = z
 type FormData = z.infer<typeof schema>
 
 export function ChangePasswordCard() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
@@ -40,7 +38,7 @@ export function ChangePasswordCard() {
     try {
       await changePassword(data.currentPassword, data.newPassword)
       toast.success("Password changed. Please sign in again.")
-      router.push("/login")
+      navigate("/login")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to change password")
     }

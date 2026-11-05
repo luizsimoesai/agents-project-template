@@ -1,4 +1,4 @@
-import Link from "next/link"
+import { Link } from "react-router"
 
 export default function NotFound() {
   return (
@@ -13,10 +13,8 @@ export default function NotFound() {
         <p className="text-sm text-muted-foreground">
           The page you’re looking for doesn’t exist or has been moved.
         </p>
-        {/* Inline styles instead of <Button> because buttonVariants lives in a
-            "use client" module and this is a server component. */}
         <Link
-          href="/assistants"
+          to="/assistants"
           className="mt-2 inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-muted"
         >
           Back to assistants

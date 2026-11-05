@@ -1,15 +1,10 @@
-"use client"
-
 import { useEffect } from "react"
+import { useRouteError } from "react-router"
 import { Button } from "@/components/ui/button"
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function RouteError() {
+  const error = useRouteError()
+
   useEffect(() => {
     console.error(error)
   }, [error])
@@ -27,12 +22,7 @@ export default function Error({
           An unexpected error occurred. Try again, and if the problem persists
           contact support.
         </p>
-        {error.digest && (
-          <p className="font-mono text-[11px] text-muted-foreground/70">
-            digest: {error.digest}
-          </p>
-        )}
-        <Button variant="outline" className="mt-2" onClick={reset}>
+        <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
           Try again
         </Button>
       </div>

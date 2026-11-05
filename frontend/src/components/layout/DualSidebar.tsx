@@ -1,8 +1,5 @@
-"use client"
-
 import { useState, useRef, useEffect } from "react"
-import Link from "next/link"
-import { useRouter, useParams, usePathname } from "next/navigation"
+import { Link, useLocation, useNavigate, useParams } from "react-router"
 import { Plus, Trash2, Pencil, Check, X } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -104,7 +101,7 @@ function ThreadItem({
       ) : (
         <>
           <Link
-            href={href as never}
+            to={href}
             className="flex items-center gap-2 flex-1 min-w-0 text-left no-underline text-inherit"
           >
             <div
@@ -138,12 +135,12 @@ function ThreadItem({
 }
 
 export function DualSidebar() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const { id: assistantId, threadId } = useParams<{
     id?: string
     threadId?: string
   }>()
-  const pathname = usePathname()
+  const { pathname } = useLocation()
   const isUtilityPage = pathname.startsWith("/profile") || pathname.startsWith("/admin")
 
   const { data: assistants } = useAssistants()
@@ -159,7 +156,7 @@ export function DualSidebar() {
       toast.success("Conversation deleted")
       if (threadId === deleteTarget.thread_id && assistantId) {
         // programmatic: navigate away from the just-deleted thread's URL
-        router.push(`/assistants/${assistantId}/threads`)
+        navigate(`/assistants/${assistantId}/threads`)
       }
       setDeleteTarget(undefined)
     } catch {
@@ -191,7 +188,7 @@ export function DualSidebar() {
             {assistantId && (
               <div className="px-2 pt-2 pb-1">
                 <Link
-                  href={`/assistants/${assistantId}/threads`}
+                  to={`/assistants/${assistantId}/threads`}
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium text-[#2a9d8f] border border-[#2a9d8f]/40 hover:bg-[#2a9d8f]/10 hover:border-[#2a9d8f]/60 transition-colors no-underline"
                 >
                   <Plus size={13} />

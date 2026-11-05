@@ -1,6 +1,7 @@
+import { Outlet } from "react-router"
 import { SquareLibrary } from "lucide-react"
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm flex flex-col items-center gap-6">
@@ -10,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
           <span className="font-semibold text-lg tracking-tight">Agent Studio</span>
         </div>
-        {children}
+        <Outlet />
       </div>
     </div>
   )

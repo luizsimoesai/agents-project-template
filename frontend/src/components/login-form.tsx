@@ -1,11 +1,8 @@
-"use client"
-
-import { useRouter } from "next/navigation"
+import { Link, useNavigate } from "react-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,7 +18,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
-  const router = useRouter()
+  const navigate = useNavigate()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
@@ -29,7 +26,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   async function onSubmit(data: FormData) {
     try {
       await login(data.email, data.password)
-      router.push("/assistants")
+      navigate("/assistants")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed")
     }
@@ -60,7 +57,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           </form>
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="underline underline-offset-4 hover:text-foreground">
+            <Link to="/signup" className="underline underline-offset-4 hover:text-foreground">
               Sign up
             </Link>
           </p>

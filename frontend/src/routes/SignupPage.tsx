@@ -1,10 +1,7 @@
-"use client"
-
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { Link, useNavigate } from "react-router"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,7 +18,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export default function SignupPage() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
@@ -30,7 +27,7 @@ export default function SignupPage() {
     try {
       await apiRegister(data)
       toast.success("Account created! Please sign in.")
-      router.push("/login")
+      navigate("/login")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create account")
     }
@@ -66,7 +63,7 @@ export default function SignupPage() {
           </form>
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="underline underline-offset-4 hover:text-foreground">
+            <Link to="/login" className="underline underline-offset-4 hover:text-foreground">
               Sign in
             </Link>
           </p>

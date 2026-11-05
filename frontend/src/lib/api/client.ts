@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/lib/store/auth"
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:2026"
+export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:2026"
 
 let refreshPromise: Promise<boolean> | null = null
 

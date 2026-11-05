@@ -1,8 +1,5 @@
-"use client"
-
-import type { Route } from "next"
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useNavigate, useParams } from "react-router"
 import { useCreateThread } from "@/lib/hooks/useThreads"
 import { useModels } from "@/lib/hooks/useModels"
 import { useAuthStore } from "@/lib/store/auth"
@@ -16,8 +13,8 @@ function greeting(name: string | null | undefined): string {
 }
 
 export default function ThreadsListPage() {
-  const router = useRouter()
-  const { id: assistantId } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { id: assistantId } = useParams() as { id: string }
   const createThread = useCreateThread()
   const user = useAuthStore((s) => s.user)
   const { data: models } = useModels()
@@ -46,8 +43,7 @@ export default function ThreadsListPage() {
     url.searchParams.set("msg", message)
     if (selectedModelId) url.searchParams.set("model", selectedModelId)
     if (selectedModel?.base_url) url.searchParams.set("model_base_url", selectedModel.base_url)
-    // typedRoutes: this href is built at runtime, so cast to Route.
-    router.replace((url.pathname + url.search) as Route)
+    navigate(url.pathname + url.search, { replace: true })
   }
 
   return (

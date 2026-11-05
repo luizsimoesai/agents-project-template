@@ -1,8 +1,4 @@
-"use client"
-
-import type { Route } from "next"
-import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
+import { Link, useLocation, useNavigate } from "react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { SquareLibrary, LayoutGrid, User, Sun, Moon, ShieldCheck, LogOut } from "lucide-react"
 import { useTheme } from "@/components/providers/ThemeProvider"
@@ -17,8 +13,8 @@ import {
 } from "@/components/ui/tooltip"
 
 export function IconRail() {
-  const router = useRouter()
-  const pathname = usePathname()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { theme, setTheme } = useTheme()
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
@@ -28,7 +24,7 @@ export function IconRail() {
     // Invalidates the refresh-token cookie + jti server-side, then clears
     // local state. Always navigates regardless of network outcome.
     await apiLogout()
-    router.push("/login")
+    navigate("/login")
   }
 
   const isOnAssistants = pathname === "/assistants"
@@ -130,15 +126,15 @@ function RailLink({
 }: {
   icon: React.ReactNode
   label: string
-  href: Route
+  href: string
   active?: boolean
 }) {
   return (
     <Tooltip>
       {/* Base UI render prop: TooltipTrigger merges its ARIA/ref/handlers
-          onto the provided <Link>, so middle-click + prefetch work natively. */}
+          onto the provided <Link>, so middle-click works natively. */}
       <TooltipTrigger
-        render={<Link href={href} />}
+        render={<Link to={href} />}
         className={railButtonClass(active)}
       >
         {icon}

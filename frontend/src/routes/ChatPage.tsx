@@ -1,16 +1,14 @@
-"use client"
-
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams, useSearchParams } from "react-router"
 import { useAssistants } from "@/lib/hooks/useAssistants"
 import { ChatView } from "@/components/chat/ChatView"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ChatPage() {
-  const { id: assistantId, threadId } = useParams<{
+  const { id: assistantId, threadId } = useParams() as {
     id: string
     threadId: string
-  }>()
-  const searchParams = useSearchParams()
+  }
+  const [searchParams] = useSearchParams()
   const initialMessage = searchParams.get("msg") ?? undefined
   const initialModel = searchParams.get("model") ?? undefined
   const initialModelBaseUrl = searchParams.get("model_base_url") ?? undefined

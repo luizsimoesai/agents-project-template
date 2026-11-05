@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect } from "react"
 import { useAuthStore } from "@/lib/store/auth"
 import { refreshSession } from "@/lib/api/auth"
